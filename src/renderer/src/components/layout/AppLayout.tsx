@@ -1,12 +1,14 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { App as AntdApp, Button, Dropdown, Input, Layout, Space, Tabs } from 'antd'
 import {
+  CloudDownloadOutlined,
   ExportOutlined,
   FolderOpenOutlined,
   GlobalOutlined,
   ReadOutlined
 } from '@ant-design/icons'
 import { strings } from '@renderer/locales/zh'
+import { isOldswfGamePageUrl } from '@shared/oldswf'
 import { getApi } from '@renderer/services/ipc.service'
 import { useGameStore } from '@renderer/store/useGameStore'
 import { useCheatStore } from '@renderer/store/useCheatStore'
@@ -17,6 +19,7 @@ import CheatListPanel from '@renderer/components/cheat/CheatListPanel'
 import SettingsPanel from '@renderer/components/settings/SettingsPanel'
 import GameLibraryPanel from '@renderer/components/library/GameLibraryPanel'
 import ExportExeModal from '@renderer/components/exe/ExportExeModal'
+import DownloadGameModal from '@renderer/components/download/DownloadGameModal'
 import WindowControls from './WindowControls'
 import StatusBar from './StatusBar'
 
@@ -30,14 +33,28 @@ function LayoutHeader() {
   const [urlText, setUrlText] = useState('')
   const [urlOpen, setUrlOpen] = useState(false)
   const [exeModalOpen, setExeModalOpen] = useState(false)
+  const [downloadOpen, setDownloadOpen] = useState(false)
+  const [downloadInput, setDownloadInput] = useState('')
 
   const loading = phase === 'loading'
 
   const openUrl = async () => {
-    if (!urlText.trim()) return
+    const url = urlText.trim()
+    if (!url) return
     setUrlOpen(false)
-    await launcher.loadFromUrl(urlText)
     setUrlText('')
+    // oldswf 游戏页有 TLS 指纹反爬且不支持跨域，网络加载必失败 → 引导到下载流程
+    if (isOldswfGamePageUrl(url)) {
+      setDownloadInput(url)
+      setDownloadOpen(true)
+      return
+    }
+    await launcher.loadFromUrl(url)
+  }
+
+  const openDownload = (prefill?: string) => {
+    if (prefill !== undefined) setDownloadInput(prefill)
+    setDownloadOpen(true)
   }
 
   return (
@@ -79,45 +96,58 @@ function LayoutHeader() {
             {strings.header.openSwf}
           </Button>
 
-        <Dropdown
-          open={urlOpen}
-          onOpenChange={setUrlOpen}
-          trigger={['click']}
-          popupRender={() => (
-            <div
-              style={{
-                background: '#1f1f1f',
-                padding: 8,
-                borderRadius: 0,
-                display: 'flex',
-                gap: 8
-              }}
-            >
-              <Input
-                style={{ width: 360 }}
-                placeholder="https://example.com/game.swf"
-                value={urlText}
-                onChange={(e) => setUrlText(e.target.value)}
-                onPressEnter={() => void openUrl()}
-              />
-              <Button type="primary" onClick={() => void openUrl()}>
-                {strings.header.openUrl}
-              </Button>
-            </div>
-          )}
-        >
-          <Button icon={<GlobalOutlined />}>{strings.header.openUrl}</Button>
-        </Dropdown>
+          <Dropdown
+            open={urlOpen}
+            onOpenChange={setUrlOpen}
+            trigger={['click']}
+            popupRender={() => (
+              <div
+                style={{
+                  background: '#1f1f1f',
+                  padding: 8,
+                  borderRadius: 0,
+                  display: 'flex',
+                  gap: 8
+                }}
+              >
+                <Input
+                  style={{ width: 360 }}
+                  placeholder="https://example.com/game.swf"
+                  value={urlText}
+                  onChange={(e) => setUrlText(e.target.value)}
+                  onPressEnter={() => void openUrl()}
+                />
+                <Button type="primary" onClick={() => void openUrl()}>
+                  {strings.header.openUrl}
+                </Button>
+              </div>
+            )}
+          >
+            <Button icon={<GlobalOutlined />}>{strings.header.openUrl}</Button>
+          </Dropdown>
 
-        <Dropdown trigger={['click']} popupRender={() => <GameLibraryPanel />} destroyPopupOnHide>
-          <Button icon={<ReadOutlined />}>{strings.header.library}</Button>
-        </Dropdown>
+          <Button icon={<CloudDownloadOutlined />} onClick={() => openDownload()}>
+            {strings.download.titleShort}
+          </Button>
+
+          <Dropdown
+            trigger={['click']}
+            popupRender={() => <GameLibraryPanel onDownload={() => openDownload()} />}
+            destroyPopupOnHide
+          >
+            <Button icon={<ReadOutlined />}>{strings.header.library}</Button>
+          </Dropdown>
         </Space>
 
         <WindowControls />
       </div>
 
       <ExportExeModal open={exeModalOpen} onClose={() => setExeModalOpen(false)} />
+      <DownloadGameModal
+        open={downloadOpen}
+        onClose={() => setDownloadOpen(false)}
+        initialInput={downloadInput}
+      />
     </Header>
   )
 }

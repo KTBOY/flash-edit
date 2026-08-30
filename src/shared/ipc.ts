@@ -2,7 +2,10 @@ import type {
   AppInfo,
   CheatProfile,
   ExePackResult,
+  ExeUnpackResult,
   GameRecord,
+  OldswfDownloadProgress,
+  OldswfDownloadResult,
   SwfPatchReportItem,
   SwfPatchSpec,
   SwfPickResult,
@@ -25,6 +28,11 @@ export const IPC = {
   SWF_PATCH_ANALYZE: 'swf:patch-analyze',
   SWF_PATCH_SAVE: 'swf:patch-save',
   EXE_PACK_SAVE: 'exe:pack-save',
+  EXE_UNPACK_SAVE: 'exe:unpack-save',
+  DOWNLOAD_OLDSWF: 'download:oldswf',
+  DOWNLOAD_OLDSWF_CANCEL: 'download:oldswf-cancel',
+  DOWNLOAD_OLDSWF_PROGRESS: 'download:oldswf-progress',
+  DOWNLOAD_SHOW_FILE: 'download:show-file',
   WINDOW_MINIMIZE: 'window:minimize',
   WINDOW_TOGGLE_MAXIMIZE: 'window:toggle-maximize',
   WINDOW_CLOSE: 'window:close',
@@ -61,6 +69,19 @@ export interface IpcApi {
     defaultName: string,
     customProjector?: Uint8Array
   ): Promise<ExePackResult>
+  /** EXE 还原为 SWF：选 projector 封装的 EXE，按尾部页脚定位附加 SWF 并另存 */
+  unpackSwfFromExe(): Promise<ExeUnpackResult>
+  /**
+   * 从 oldswf.com 下载游戏 SWF（驱动本机真实浏览器监听分片，绕过 TLS 指纹反爬）。
+   * 单并发：进行中再次调用直接拒绝；完成后文件落在 userData/games 并自动入游戏库。
+   */
+  downloadOldswfGame(input: string): Promise<OldswfDownloadResult>
+  /** 取消进行中的 oldswf 下载（关闭浏览器会话）；无进行中任务返回 false */
+  cancelOldswfDownload(): Promise<boolean>
+  /** 订阅 oldswf 下载进度，返回取消订阅函数 */
+  onOldswfDownloadProgress(callback: (progress: OldswfDownloadProgress) => void): () => void
+  /** 在系统文件管理器中显示文件 */
+  showFileInFolder(path: string): void
   /* 无边框窗口控制（自定义标题栏） */
   minimizeWindow(): void
   toggleMaximizeWindow(): void

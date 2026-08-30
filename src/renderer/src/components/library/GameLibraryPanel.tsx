@@ -1,5 +1,5 @@
 import { App as AntdApp, Button, Empty, List, Popconfirm, Typography } from 'antd'
-import { DeleteOutlined, PlayCircleOutlined } from '@ant-design/icons'
+import { CloudDownloadOutlined, DeleteOutlined, PlayCircleOutlined } from '@ant-design/icons'
 import type { GameRecord } from '@shared/types'
 import { strings } from '@renderer/locales/zh'
 import { getApi } from '@renderer/services/ipc.service'
@@ -7,7 +7,7 @@ import { useGameStore } from '@renderer/store/useGameStore'
 import { useAppServices } from '@renderer/services/app-services'
 
 /** 游戏库（最近游玩）面板，嵌在头部下拉中 */
-export default function GameLibraryPanel() {
+export default function GameLibraryPanel({ onDownload }: { onDownload?: () => void }) {
   const { launcher } = useAppServices()
   const { message } = AntdApp.useApp()
   const recent = useGameStore((s) => s.recent)
@@ -35,9 +35,16 @@ export default function GameLibraryPanel() {
         boxShadow: '0 20px 60px rgba(0,0,0,.6)'
       }}
     >
-      <Typography.Text strong style={{ padding: '4px 8px', display: 'block' }}>
-        {strings.library.title}
-      </Typography.Text>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Typography.Text strong style={{ padding: '4px 8px' }}>
+          {strings.library.title}
+        </Typography.Text>
+        {onDownload && (
+          <Button size="small" type="link" icon={<CloudDownloadOutlined />} onClick={onDownload}>
+            {strings.download.libraryEntry}
+          </Button>
+        )}
+      </div>
       {recent.length === 0 ? (
         <Empty description={strings.library.empty} image={Empty.PRESENTED_IMAGE_SIMPLE} />
       ) : (
@@ -54,12 +61,18 @@ export default function GameLibraryPanel() {
                   type="link"
                   icon={<PlayCircleOutlined />}
                   disabled={!record.path && record.source !== 'url'}
-                  title={!record.path && record.source !== 'url' ? strings.library.dropOnly : undefined}
+                  title={
+                    !record.path && record.source !== 'url' ? strings.library.dropOnly : undefined
+                  }
                   onClick={() => void launcher.reopen(record)}
                 >
                   {strings.library.reopen}
                 </Button>,
-                <Popconfirm key="del" title={strings.library.remove} onConfirm={() => void remove(record.hash)}>
+                <Popconfirm
+                  key="del"
+                  title={strings.library.remove}
+                  onConfirm={() => void remove(record.hash)}
+                >
                   <Button size="small" type="text" danger icon={<DeleteOutlined />} />
                 </Popconfirm>
               ]}

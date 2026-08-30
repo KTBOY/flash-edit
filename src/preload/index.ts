@@ -3,6 +3,7 @@ import type {
   CheatProfile,
   ExePackResult,
   GameRecord,
+  OldswfDownloadProgress,
   SwfPatchReportItem,
   SwfPatchSpec,
   SwfSaveResult
@@ -37,6 +38,19 @@ const api: IpcApi = {
     customProjector?: Uint8Array
   ): Promise<ExePackResult> =>
     ipcRenderer.invoke(IPC.EXE_PACK_SAVE, swfBytes, defaultName, customProjector),
+  unpackSwfFromExe: () => ipcRenderer.invoke(IPC.EXE_UNPACK_SAVE),
+
+  downloadOldswfGame: (input: string) => ipcRenderer.invoke(IPC.DOWNLOAD_OLDSWF, input),
+  cancelOldswfDownload: () => ipcRenderer.invoke(IPC.DOWNLOAD_OLDSWF_CANCEL),
+  onOldswfDownloadProgress: (callback: (progress: OldswfDownloadProgress) => void) => {
+    const listener = (_event: IpcRendererEvent, progress: OldswfDownloadProgress) =>
+      callback(progress)
+    ipcRenderer.on(IPC.DOWNLOAD_OLDSWF_PROGRESS, listener)
+    return () => {
+      ipcRenderer.removeListener(IPC.DOWNLOAD_OLDSWF_PROGRESS, listener)
+    }
+  },
+  showFileInFolder: (path: string) => ipcRenderer.send(IPC.DOWNLOAD_SHOW_FILE, path),
 
   minimizeWindow: () => ipcRenderer.send(IPC.WINDOW_MINIMIZE),
   toggleMaximizeWindow: () => ipcRenderer.send(IPC.WINDOW_TOGGLE_MAXIMIZE),

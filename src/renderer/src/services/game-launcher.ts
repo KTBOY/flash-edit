@@ -80,13 +80,32 @@ export class GameLauncher {
     message.warning('该记录来自拖拽加载，未保存本地路径，请重新拖入文件')
   }
 
-  private async loadLocalPath(path: string, name: string, size: number): Promise<void> {
+  /** 载入 oldswf 下载完成的本地文件（游戏库记录保留 download 来源） */
+  async loadDownloadedFile(result: {
+    path: string
+    name: string
+    sizeBytes: number
+  }): Promise<void> {
+    await this.loadLocalPath(result.path, result.name, result.sizeBytes, 'download')
+  }
+
+  /** 载入指定路径的本地 SWF（EXE 还原等流程用；来源按普通文件记录） */
+  async loadLocalFile(path: string, name: string, size: number): Promise<void> {
+    await this.loadLocalPath(path, name, size)
+  }
+
+  private async loadLocalPath(
+    path: string,
+    name: string,
+    size: number,
+    source: GameRecord['source'] = 'file'
+  ): Promise<void> {
     useGameStore.getState().beginLoad()
     try {
       const response = await fetch(buildSwfFileUrl(path))
       if (!response.ok) throw new Error(`本地文件读取失败（HTTP ${response.status}）`)
       const bytes = new Uint8Array(await response.arrayBuffer())
-      await this.loadWithBytes(bytes, name, size, 'file', path)
+      await this.loadWithBytes(bytes, name, size, source, path)
     } catch (error) {
       this.fail('加载本地 SWF 失败', error)
     }

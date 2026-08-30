@@ -1,5 +1,6 @@
-import { app, dialog, ipcMain } from 'electron'
+import { app, dialog, ipcMain, shell } from 'electron'
 import type { BrowserWindow } from 'electron'
+import { join } from 'node:path'
 import { writeFile } from 'node:fs/promises'
 import type { CheatProfile, GameRecord, SwfPatchSpec } from '@shared/types'
 import { IPC } from '@shared/ipc'
@@ -12,6 +13,8 @@ import {
   isWindowsExecutable,
   readBundledProjector
 } from './services/exe-pack.service'
+import { OldswfDownloadService } from './services/oldswf/oldswf-download.service'
+import { unpackSwfFromExeFile } from './services/exe-unpack.service'
 import { GameService } from './services/game.service'
 import { ProfileService } from './services/profile.service'
 
@@ -34,6 +37,15 @@ async function showExeSaveDialog(defaultName: string): Promise<string | null> {
 export function registerIpcHandlers(context: MainContext): () => void {
   const games = new GameService(app.getPath('userData'))
   const profiles = new ProfileService(app.getPath('userData'))
+  const win = () => context.getMainWindow()
+
+  // oldswf 下载：文件落在 userData/games，进度实时推送给渲染层
+  const oldswfDownloads = new OldswfDownloadService(
+    join(app.getPath('userData'), 'games'),
+    (progress) => {
+      win()?.webContents.send(IPC.DOWNLOAD_OLDSWF_PROGRESS, progress)
+    }
+  )
 
   ipcMain.handle(IPC.APP_INFO, () => ({
     version: app.getVersion(),
@@ -93,8 +105,17 @@ export function registerIpcHandlers(context: MainContext): () => void {
     }
   )
 
+  // oldswf 游戏下载：启动 / 取消 / 进度事件 / 定位文件
+  ipcMain.handle(IPC.DOWNLOAD_OLDSWF, (_event, input: string) => oldswfDownloads.download(input))
+  ipcMain.handle(IPC.DOWNLOAD_OLDSWF_CANCEL, () => oldswfDownloads.cancel())
+  ipcMain.on(IPC.DOWNLOAD_SHOW_FILE, (_event, path: string) => {
+    if (typeof path === 'string' && path) shell.showItemInFolder(path)
+  })
+
+  // EXE 还原：选 projector 封装的 EXE，按尾部页脚提取附加 SWF 并另存
+  ipcMain.handle(IPC.EXE_UNPACK_SAVE, () => unpackSwfFromExeFile(context.getMainWindow()))
+
   // 无边框窗口控制：min/max/close 融合进自定义标题栏
-  const win = () => context.getMainWindow()
   ipcMain.on(IPC.WINDOW_MINIMIZE, () => win()?.minimize())
   ipcMain.on(IPC.WINDOW_TOGGLE_MAXIMIZE, () => {
     const current = win()

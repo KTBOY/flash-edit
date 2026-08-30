@@ -6,11 +6,14 @@ import { buildSwfFileUrl } from '@shared/protocol'
 import { getApi } from '@renderer/services/ipc.service'
 import { getLoadedSwfSource } from '@renderer/services/game-launcher'
 import { useGameStore } from '@renderer/store/useGameStore'
+import { useAppServices } from '@renderer/services/app-services'
 
 type SwfSource =
   | { kind: 'current'; bytes: Uint8Array; name: string }
   | { kind: 'picked'; bytes: Uint8Array; name: string }
   | null
+
+type ModalMode = 'pack' | 'unpack'
 
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`
@@ -19,14 +22,17 @@ function formatBytes(bytes: number): string {
 }
 
 /**
- * 「打包 EXE」弹窗：把 SWF 附加到 Flash 独立播放器末尾，生成双击即玩的单文件 EXE。
- * 来源支持：当前加载的游戏 / 任意本地 SWF；播放器支持内置或自定义。
+ * 「Flash ⇄ EXE」弹窗（双向）：
+ * - 打包：把 SWF 附加到 Flash 独立播放器末尾，生成双击即玩的单文件 EXE；
+ * - 还原：读取 projector 封装 EXE 尾部页脚，提取出原始 SWF。
  */
 export default function ExportExeModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { message } = AntdApp.useApp()
+  const { launcher } = useAppServices()
   const game = useGameStore((s) => s.game)
   const currentSource = useMemo(() => (open ? getLoadedSwfSource() : null), [open])
 
+  const [mode, setMode] = useState<ModalMode>('pack')
   const [useCurrent, setUseCurrent] = useState(true)
   const [picked, setPicked] = useState<SwfSource>(null)
   const [useCustomProjector, setUseCustomProjector] = useState(false)
@@ -34,11 +40,14 @@ export default function ExportExeModal({ open, onClose }: { open: boolean; onClo
   const [projectorName, setProjectorName] = useState('')
   const [outputName, setOutputName] = useState('')
   const [busy, setBusy] = useState(false)
+  const [unpackError, setUnpackError] = useState('')
   const projectorInputRef = useRef<HTMLInputElement | null>(null)
 
   // 打开时按当前游戏初始化
   useEffect(() => {
     if (!open) return
+    setMode('pack')
+    setUnpackError('')
     setUseCurrent(currentSource !== null)
     setPicked(null)
     setUseCustomProjector(false)
@@ -99,6 +108,37 @@ export default function ExportExeModal({ open, onClose }: { open: boolean; onClo
     }
   }
 
+  const extract = async () => {
+    setBusy(true)
+    setUnpackError('')
+    try {
+      const result = await getApi().unpackSwfFromExe()
+      switch (result.status) {
+        case 'pick-canceled':
+          return
+        case 'save-canceled':
+          message.info(strings.exe.unpackSaveCanceled)
+          return
+        case 'not-found':
+          setUnpackError(strings.exe.unpackNotFound)
+          return
+        case 'saved':
+          message.success(
+            `${strings.exe.unpackSaved}${result.path}（${result.magic} · ${formatBytes(result.swfSize ?? 0)}）`
+          )
+          onClose()
+          if (result.path && result.name) {
+            void launcher.loadLocalFile(result.path, result.name, result.swfSize ?? 0)
+          }
+          return
+      }
+    } catch (error) {
+      message.error(error instanceof Error ? error.message : String(error))
+    } finally {
+      setBusy(false)
+    }
+  }
+
   return (
     <Modal
       title={strings.exe.title}
@@ -108,13 +148,47 @@ export default function ExportExeModal({ open, onClose }: { open: boolean; onClo
       footer={
         <Space>
           <Button onClick={onClose}>取消</Button>
-          <Button type="primary" loading={busy} disabled={!activeSource} onClick={() => void pack()}>
-            {strings.exe.generate}
-          </Button>
+          {mode === 'pack' ? (
+            <Button
+              type="primary"
+              loading={busy}
+              disabled={!activeSource}
+              onClick={() => void pack()}
+            >
+              {strings.exe.generate}
+            </Button>
+          ) : (
+            <Button type="primary" loading={busy} onClick={() => void extract()}>
+              {strings.exe.unpackPick}
+            </Button>
+          )}
         </Space>
       }
     >
       <Space direction="vertical" size={14} style={{ width: '100%', marginTop: 8 }}>
+        {/* 模式切换：打包 / 还原 */}
+        <Radio.Group
+          value={mode}
+          buttonStyle="solid"
+          onChange={(e) => setMode(e.target.value as ModalMode)}
+        >
+          <Radio.Button value="pack">{strings.exe.modePack}</Radio.Button>
+          <Radio.Button value="unpack">{strings.exe.modeUnpack}</Radio.Button>
+        </Radio.Group>
+
+        {mode === 'unpack' ? (
+          <>
+            <Typography.Paragraph type="secondary" style={{ fontSize: 12, marginBottom: 0 }}>
+              {strings.exe.unpackHint}
+            </Typography.Paragraph>
+            {unpackError && (
+              <Typography.Paragraph type="danger" style={{ fontSize: 12, marginBottom: 0 }}>
+                {unpackError}
+              </Typography.Paragraph>
+            )}
+          </>
+        ) : (
+          <>
         <Typography.Paragraph type="secondary" style={{ fontSize: 12, marginBottom: 0 }}>
           {strings.exe.hint}
         </Typography.Paragraph>
@@ -215,6 +289,8 @@ export default function ExportExeModal({ open, onClose }: { open: boolean; onClo
         <Typography.Paragraph type="secondary" style={{ fontSize: 12, marginBottom: 0 }}>
           {strings.exe.note}
         </Typography.Paragraph>
+          </>
+        )}
       </Space>
     </Modal>
   )

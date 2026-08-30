@@ -15,6 +15,7 @@ src/
 ├─ shared/                    # 跨进程共享层（唯一事实来源）
 │  ├─ types.ts                #   领域类型：ValueType/ScanRequest/CheatProfile/GameRecord…
 │  ├─ ipc.ts                  #   IPC 通道常量 + IpcApi 契约（preload 实现、renderer 依赖）
+│  ├─ oldswf.ts               #   oldswf 输入解析/文件名清洗（主进程下载与渲染层引导共用）
 │  └─ protocol.ts             #   swf-file:// 自定义协议 URL 构造/解析
 ├─ main/                      # 主进程
 │  ├─ index.ts                #   生命周期：单实例锁 → 协议注册 → 窗口 → IPC 装配
@@ -26,7 +27,11 @@ src/
 │     ├─ dialog.service.ts    #   文件选择
 │     ├─ storage.service.ts   #   JsonStore：临时文件 + rename 原子写
 │     ├─ game.service.ts      #   游戏库（最近游玩）
-│     └─ profile.service.ts   #   修改配置（按游戏哈希）
+│     ├─ profile.service.ts   #   修改配置（按游戏哈希）
+│     └─ oldswf/              #   oldswf.com 游戏下载（playwright-core 驱动系统浏览器）
+│        ├─ oldswf-download.service.ts # 下载编排：监听分片 → 重组 → IndexedDB 兜底 → 落盘
+│        ├─ chunk-assembler.ts #   分片重组/Content-Range/SWF 头（纯逻辑，可单测）
+│        └─ __tests__/         #   重组器单测
 ├─ preload/
 │  └─ index.ts                # contextBridge 白名单暴露 IpcApi（sandbox 开启）
 └─ renderer/
@@ -52,7 +57,7 @@ src/
       │  ├─ useGameStore.ts   #   游戏会话/游戏库/速度
       │  ├─ useScanStore.ts   #   扫描会话状态机（首扫/再扫/撤销/重置）
       │  └─ useCheatStore.ts  #   修改列表（冻结引擎的唯一事实来源）
-      ├─ components/          # UI 组件（layout / player / scan / cheat / settings / library）
+      ├─ components/          # UI 组件（layout / player / scan / cheat / settings / library / download）
       ├─ hooks/ useTick.ts    # 非响应式数据驱动刷新
       └─ locales/ zh.ts       # 文案集中管理
 ```
@@ -107,6 +112,27 @@ shared/ipc.ts(IpcApi) ── preload 实现 ── window.api ── renderer �
 `GameLauncher.finalize()`：扫描会话重置 → cheat 上下文切换 → 播放器加载 →
 游戏库记录 → 配置恢复。新增入口只需复用，不会漏步骤。
 
+### 7. oldswf 下载链路（获取游戏的第零步）
+
+oldswf.com 对游戏资源做 TLS 指纹反爬（非真实浏览器一律 404），且不支持跨域，
+所以「网络加载」到不了这里的游戏——下载器是 oldswf 内容进入应用的唯一入口：
+
+```
+头部「下载游戏」/ 游戏库「下载新游戏」/ 网络加载输入 oldswf 游戏页 → 引导
+  → IPC download:oldswf → OldswfDownloadService（主进程，单并发，可取消）
+    → playwright-core 以无头模式驱动系统 Edge/Chrome（真实 TLS 指纹）
+    → 监听 /data/game_*/<id>.swf 的 200/206 响应，按 Content-Range 重组
+    → 分片缺失兜底：page 内 IndexedDB（swfFiles/blobs）提取
+    → SWF 头校验（FWS/CWS/ZWS）→ 写入 userData/games → 事件推送进度
+  → 完成后 GameLauncher.loadDownloadedFile 复用 finalize 链自动载入，
+    游戏库记录 source = 'download'
+```
+
+设计要点：playwright-core 不携带浏览器内核（走系统浏览器，安装包零增量）；
+纯逻辑（输入解析 `@shared/oldswf`、分片重组）与浏览器 IO 分离，前者完整单测；
+main/preload 通过 `externalizeDepsPlugin` 保持依赖运行时 require，
+避免把 playwright-core 的可选依赖动态 import 打进 bundle。
+
 ## 变速齿轮的实现边界
 
 `performance.now` 被 Ruffle 用于帧循环与 `getTimer`，包装后生效；
@@ -118,7 +144,8 @@ Flash 游戏可完整实现加速/减速。
 | 门禁 | 命令 | 状态 |
 | --- | --- | --- |
 | 类型检查（node + web 两个 project） | `npm run typecheck` | ✅ 0 error |
-| 单元测试 | `npm run test` | ✅ 25/25 |
-| 生产构建 | `npm run build` | ✅ main 7.6KB / renderer 2.3MB |
-| 启动冒烟 | 8s 受控启停 | ✅ 无崩溃 |
+| 单元测试 | `npm run test` | ✅ 67/67 |
+| 生产构建 | `npm run build` | ✅ main/preload 外部化依赖 + renderer 2.3MB |
+| 下载链路端到端 | 真机 oldswf.com 下载 | ✅ 分片重组 SHA-256 与原脚本一致 |
+| EXE 打包/还原往返 | 真实 projector + 3MB SWF | ✅ SHA-256 一致 |
 | Lint / 格式化 | `npm run lint` / `npm run format` | ESLint9 flat + Prettier |

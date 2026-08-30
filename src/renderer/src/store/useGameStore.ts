@@ -6,7 +6,7 @@ export interface CurrentGame {
   hash: string
   name: string
   size: number
-  source: 'file' | 'drop' | 'url'
+  source: 'file' | 'drop' | 'url' | 'download'
 }
 
 export type GamePhase = 'idle' | 'loading' | 'ready' | 'error'

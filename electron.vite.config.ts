@@ -1,9 +1,12 @@
-import { defineConfig } from 'electron-vite'
+import { defineConfig, externalizeDepsPlugin } from 'electron-vite'
 import react from '@vitejs/plugin-react'
 import { resolve } from 'node:path'
 
 export default defineConfig({
   main: {
+    // 依赖保持运行时 require：避免把 playwright-core 打进 bundle
+    // （其可选依赖的动态 import 无法静态解析）；electron-builder 会携带生产依赖
+    plugins: [externalizeDepsPlugin()],
     resolve: {
       alias: {
         '@shared': resolve(__dirname, 'src/shared')
@@ -16,6 +19,7 @@ export default defineConfig({
     }
   },
   preload: {
+    plugins: [externalizeDepsPlugin()],
     resolve: {
       alias: {
         '@shared': resolve(__dirname, 'src/shared')

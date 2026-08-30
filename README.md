@@ -16,10 +16,13 @@ Flash 游戏通用（AVM1/AS2 与 AVM2/AS3 均支持）。
 ## 功能
 
 - **游戏运行**：本地文件（对话框/拖拽）、网络 URL、游戏库一键重开；播放/暂停/重启/音量/全屏
+- **游戏下载**：内置 oldswf.com 下载器——驱动本机 Edge/Chrome 监听游戏分片下载并重组
+  （绕过其 TLS 指纹反爬），完成后自动载入并计入游戏库
 - **数值扫描**：精确值 / 介于 / 未知初始值 / 增大 / 减小 / 变动 / 未变动，撤销 5 步、候选上限保护
+- **游戏库**：下载 → 收藏 → 重玩 → 修改 → 打包的游戏中枢
 - **数值修改与锁定**：单地址写入、批量写入、锁定持续写回（无敌/不减金币）
 - **写入 SWF**：把运行时修改固化为离线常量补丁，另存永久修改版 Flash 文件（AS3 常量池 / AS2 字节匹配）
-- **打包 EXE**：Flash 转 EXE（移植自 cali.so）——SWF 附加到 Flash 独立播放器末尾生成双击即玩单文件 EXE，支持当前游戏或任意本地 SWF、内置/自定义播放器
+- **打包 / 还原 EXE**：Flash ⇄ EXE 双向——SWF 附加到 Flash 独立播放器末尾生成双击即玩单文件 EXE（移植自 cali.so，支持当前游戏或任意本地 SWF、内置/自定义播放器）；也能按 projector 页脚从这类 EXE 中提取回原始 SWF
 - **变速齿轮**：0.1x–10x 全局时间缩放
 - **配置存档**：按游戏内容 SHA-256 自动保存/恢复修改列表，失效地址自动标记
 - **值类型覆盖**：f64（AVM Number）/ i32 / f32 / i16 / i8，"自动"模式覆盖绝大多数游戏
@@ -52,7 +55,8 @@ npm run dist
 ## 技术栈
 
 Electron 37 · React 18 · Zustand · Ant Design 5 · TypeScript strict ·
-Vitest · [Ruffle](https://ruffle.rs)（WASM Flash 模拟器）
+Vitest · [Ruffle](https://ruffle.rs)（WASM Flash 模拟器）·
+playwright-core（驱动系统 Edge/Chrome 做游戏下载）
 
 界面采用 [Resonance HUD](https://github.com/KTBOY/resonance-hud) 深色金调游戏 HUD
 设计语言：近黑基底、单一品牌金、发丝级描边、纯直角、L 形四角角标、中英双语区块标题、

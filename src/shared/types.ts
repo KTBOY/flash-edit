@@ -111,6 +111,22 @@ export interface ExePackResult {
   projectorSize: number
 }
 
+/** EXE 还原（提取附加 SWF）的结果 */
+export interface ExeUnpackResult {
+  /** pick-canceled 未选择 EXE / save-canceled 取消另存 / not-found 无附加 SWF / saved 成功 */
+  status: 'pick-canceled' | 'save-canceled' | 'not-found' | 'saved'
+  /** 提取出的 SWF 保存路径（saved 时存在） */
+  path?: string
+  /** 保存的文件名（含扩展名，saved 时存在） */
+  name?: string
+  /** 附加 SWF 的字节数 */
+  swfSize?: number
+  /** EXE 中 projector 部分的字节数 */
+  projectorSize?: number
+  /** SWF 文件头标识 */
+  magic?: 'FWS' | 'CWS' | 'ZWS'
+}
+
 /** 按游戏哈希持久化的修改配置 */
 export interface CheatProfile {
   version: 1
@@ -129,10 +145,33 @@ export interface GameRecord {
   name: string
   size: number
   lastPlayed: string
-  source: 'file' | 'drop' | 'url'
+  source: 'file' | 'drop' | 'url' | 'download'
   /** 本地文件绝对路径（drop 场景拿不到） */
   path?: string
   url?: string
+}
+
+/** oldswf 下载进度（主进程 → 渲染进程事件推送） */
+export interface OldswfDownloadProgress {
+  gameId: string
+  /** starting 启动浏览器 / downloading 监听分片 / extracting 页面缓存提取 / saving 落盘 */
+  phase: 'starting' | 'downloading' | 'extracting' | 'saving'
+  /** 已接收字节数（去重分片求和） */
+  receivedBytes: number
+  /** 总字节数；0 表示尚不可知 */
+  totalBytes: number
+  /** 已捕获分片数 */
+  chunkCount: number
+}
+
+/** oldswf 下载结果 */
+export interface OldswfDownloadResult {
+  gameId: string
+  /** 保存的文件名（含扩展名），与游戏库记录 name 一致 */
+  name: string
+  /** 本地文件绝对路径（userData/games 目录下） */
+  path: string
+  sizeBytes: number
 }
 
 /** 文件选择结果 */

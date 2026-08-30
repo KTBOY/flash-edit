@@ -131,9 +131,18 @@ export const strings = {
       '基于 Ruffle(WASM) 内存扫描的通用 Flash 游戏修改器。扫描地址仅当前会话有效，重开游戏后请重新扫描；修改配置会按游戏内容哈希自动恢复。'
   },
   exe: {
-    title: '打包 EXE（Flash 转 EXE）',
+    title: 'Flash ⇄ EXE（打包 / 还原）',
     titleShort: '打包 EXE',
+    modePack: 'SWF → EXE（打包）',
+    modeUnpack: 'EXE → SWF（还原）',
     hint: '把 SWF 附加到 Flash 独立播放器末尾，生成双击即玩、无需安装任何播放器的单文件 EXE（原理：projector + SWF + 8 字节页脚）。',
+    unpackHint:
+      '读取 EXE 尾部的 projector 页脚（魔数 0xFA123456 + SWF 长度）定位附加的 SWF 并另存——支持本工具打包的 EXE，以及任何按此结构封装的 EXE。提取完成后自动载入游戏。',
+    unpackPick: '选择 EXE 并提取 SWF',
+    unpackNotFound:
+      '未在该 EXE 中检测到附加的 SWF（尾部缺少 projector 页脚）。仅支持 Flash projector 结构封装的 EXE，Zinc 等第三方封壳暂不支持。',
+    unpackSaveCanceled: '已取消保存',
+    unpackSaved: '已提取 SWF：',
     sourceTitle: 'SWF 来源',
     useCurrent: '打包当前游戏',
     useCurrentNone: '（当前未加载本地游戏）',
@@ -162,5 +171,28 @@ export const strings = {
     reopen: '打开',
     remove: '删除记录',
     dropOnly: '拖拽加载，需重新拖入'
+  },
+  download: {
+    title: '下载游戏（oldswf.com）',
+    titleShort: '下载游戏',
+    libraryEntry: '下载新游戏',
+    hint: '输入 oldswf 游戏页地址或数字 ID，应用会驱动本机浏览器（Edge/Chrome）监听并重组游戏资源，完成后自动载入并计入游戏库',
+    inputLabel: '游戏页地址或游戏 ID',
+    inputPlaceholder: 'https://oldswf.com/game/109087 或 109087',
+    invalid: '请输入 oldswf.com/game/<数字ID> 或纯数字游戏 ID',
+    start: '开始下载',
+    cancel: '取消下载',
+    close: '关闭',
+    starting: '正在启动本机浏览器…',
+    downloading: '正在下载游戏资源',
+    extracting: '分片不完整，正在从页面缓存提取…',
+    saving: '正在保存…',
+    done: '下载完成，正在载入游戏',
+    canceled: '下载已取消',
+    busy: '已有下载任务正在进行',
+    totalUnknown: '总大小未知',
+    chunks: '分片',
+    failedTitle: '下载失败',
+    progressSuffix: '已完成'
   }
 } as const
