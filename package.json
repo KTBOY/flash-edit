@@ -1,0 +1,68 @@
+{
+  "name": "flash-game-trainer",
+  "version": "0.1.0",
+  "description": "通用 Flash 游戏修改器：基于 Ruffle(WASM) 内存扫描与运行时修改，支持数值修改、锁定与变速",
+  "main": "out/main/index.js",
+  "author": "flash-game-trainer contributors",
+  "license": "MIT",
+  "private": true,
+  "build": {
+    "appId": "dev.flash.trainer",
+    "productName": "Flash Game Trainer",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "out/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "resources",
+        "to": "resources"
+      }
+    ],
+    "win": {
+      "target": "nsis"
+    }
+  },
+  "scripts": {
+    "postinstall": "node scripts/copy-ruffle.mjs",
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "preview": "electron-vite preview",
+    "start": "electron-vite dev",
+    "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "dist": "electron-vite build && electron-builder --win"
+  },
+  "dependencies": {
+    "@ant-design/icons": "^5.6.1",
+    "@ruffle-rs/ruffle": "^0.5.0",
+    "antd": "^5.24.0",
+    "nanoid": "^5.1.5",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "zustand": "^5.0.3"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.21.0",
+    "@types/node": "^22.13.0",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "@vitejs/plugin-react": "^4.3.4",
+    "electron": "^37.2.0",
+    "electron-builder": "^25.1.8",
+    "electron-vite": "^3.1.0",
+    "eslint": "^9.21.0",
+    "eslint-config-prettier": "^10.1.1",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "prettier": "^3.5.3",
+    "typescript": "^5.7.3",
+    "typescript-eslint": "^8.26.0",
+    "vite": "^6.3.5",
+    "vitest": "^3.0.8"
+  }
+}

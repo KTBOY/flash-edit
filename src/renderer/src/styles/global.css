@@ -1,0 +1,630 @@
+/* ============================================================
+   Resonance HUD 设计语言 —— Flash Game Trainer 全局样式
+   令牌取样自 skill：深色金调 / 近黑基底 / 单一品牌金 / 发丝描边 / 纯直角
+   ============================================================ */
+
+:root {
+  /* 品牌色 —— 固定不变 */
+  --gold: #c9ac67;
+  --gold-bright: #e6cf95;
+  --gold-dim: rgba(201, 172, 103, 0.3);
+
+  /* 文字 */
+  --cream: #fafae9;
+  --cream-dim: rgba(250, 250, 233, 0.45);
+
+  /* 表面 */
+  --bg-0: #14161a;
+  --bg-1: #1b1e23;
+  --card: rgba(255, 255, 255, 0.035);
+  --hair: rgba(201, 172, 103, 0.2);
+
+  /* 状态绿：单一强调色规则唯一允许的例外 */
+  --live: #6ee7a0;
+
+  --ease: cubic-bezier(0.32, 0.72, 0.24, 1);
+  --latin: 'Bahnschrift', 'DIN Alternate', 'Segoe UI', sans-serif;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+* {
+  box-sizing: border-box;
+  border-radius: 0 !important;
+}
+
+body {
+  overflow: hidden;
+  background: var(--bg-0);
+  color: var(--cream);
+}
+
+/* ---------- 面板基底 ---------- */
+
+.panel {
+  position: relative;
+  background:
+    radial-gradient(130% 80% at 100% 0%, rgba(201, 172, 103, 0.11), transparent 62%),
+    linear-gradient(168deg, var(--bg-1), var(--bg-0) 62%);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+  overflow: hidden;
+}
+
+/* 斜向扫描纹理 —— 2.2% 透明度，只做质感 */
+.panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    115deg,
+    rgba(255, 255, 255, 0.022) 0 1px,
+    transparent 1px 5px
+  );
+  pointer-events: none;
+}
+
+/* 顶边金色发丝光线 */
+.panel::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 1px;
+  background: linear-gradient(90deg, var(--gold), rgba(201, 172, 103, 0.35));
+  pointer-events: none;
+  z-index: 3;
+}
+
+/* ---------- 卡片 + 四角角标 ---------- */
+
+.hud-card {
+  position: relative;
+  background: var(--card);
+  border: 1px solid var(--hair);
+  padding: 13px 14px;
+}
+
+.hud-card::before,
+.hud-card::after {
+  content: '';
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  border-color: var(--gold);
+  pointer-events: none;
+  z-index: 4;
+}
+
+.hud-card::before {
+  left: -1px;
+  top: -1px;
+  border-top: 1.5px solid;
+  border-left: 1.5px solid;
+}
+
+.hud-card::after {
+  right: -1px;
+  bottom: -1px;
+  border-bottom: 1.5px solid;
+  border-right: 1.5px solid;
+}
+
+/* ---------- 中英双语区块标题 ---------- */
+
+.card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.card-head .mk {
+  width: 3px;
+  height: 12px;
+  background: var(--gold);
+  flex: none;
+}
+
+.card-head .zh {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  color: var(--cream);
+}
+
+.card-head .ln {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--gold-dim), transparent);
+}
+
+.card-head .en {
+  font: 400 8.5px/1 var(--latin);
+  letter-spacing: 2.2px;
+  color: var(--gold-dim);
+}
+
+/* ---------- 菱形节点 ---------- */
+
+.diamond {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  flex: none;
+  background: var(--gold);
+  transform: rotate(45deg);
+  box-shadow: 0 0 8px rgba(201, 172, 103, 0.7);
+}
+
+.diamond.dim {
+  background: var(--gold-dim);
+  box-shadow: none;
+}
+
+.diamond.live {
+  width: 4px;
+  height: 4px;
+  background: var(--live);
+  box-shadow: 0 0 6px var(--live);
+}
+
+/* ---------- 大号数字读数 ---------- */
+
+.readout {
+  font: 700 32px/1 var(--latin);
+  color: var(--gold-bright);
+  letter-spacing: 1px;
+  text-shadow: 0 0 18px rgba(201, 172, 103, 0.45);
+}
+
+.readout small {
+  font-size: 13px;
+  margin-left: 6px;
+  color: var(--gold-dim);
+  letter-spacing: 2px;
+  font-family: var(--latin);
+}
+
+/* ---------- 点阵括号 ---------- */
+
+.dots {
+  display: grid;
+  grid-template-columns: 2px 2px;
+  grid-template-rows: 2px 2px 2px;
+  gap: 1.5px;
+  opacity: 0.55;
+}
+
+.dots i {
+  background: var(--gold);
+}
+
+.dots.mirror {
+  transform: scaleX(-1);
+}
+
+/* ---------- 标题栏（应用头部 = 无边框窗口拖拽区） ---------- */
+
+.hud-header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 0 0 16px !important;
+  height: 56px !important;
+  background:
+    radial-gradient(120% 160% at 0% 0%, rgba(201, 172, 103, 0.08), transparent 55%),
+    linear-gradient(168deg, var(--bg-1), var(--bg-0) 70%);
+  border-bottom: 1px solid var(--hair);
+  -webkit-app-region: drag;
+}
+
+/* 头部内所有交互元素退出拖拽区 */
+.hud-header .ant-btn,
+.hud-header input,
+.win-controls {
+  -webkit-app-region: no-drag;
+}
+
+.hud-header::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(201, 172, 103, 0.35), var(--gold), rgba(201, 172, 103, 0.1));
+  pointer-events: none;
+}
+
+.hud-titlebar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.hud-titlebar .tt {
+  line-height: 1.15;
+}
+
+.hud-titlebar .tt b {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  color: var(--cream);
+}
+
+.hud-titlebar .tt i {
+  display: block;
+  font-style: normal;
+  font: 400 8.5px/1 var(--latin);
+  letter-spacing: 2.6px;
+  color: var(--gold-dim);
+  margin-top: 3px;
+}
+
+.hud-state {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font: 400 9px/1 var(--latin);
+  letter-spacing: 2.4px;
+  color: var(--cream-dim);
+  padding: 5px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.28);
+}
+
+.hud-state.on {
+  color: var(--live);
+  border-color: rgba(110, 231, 160, 0.25);
+}
+
+.hud-game-name {
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  letter-spacing: 0.5px;
+  color: var(--gold-bright);
+  padding: 3px 10px;
+  border: 1px solid var(--gold-dim);
+  background: rgba(201, 172, 103, 0.08);
+  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+}
+
+/* ---------- 无边框窗口控制组 ---------- */
+
+.header-right {
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+
+.win-controls {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: 12px;
+  align-self: stretch;
+}
+
+.win-controls button {
+  width: 42px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--cream-dim);
+  transition: all 0.15s var(--ease);
+  cursor: pointer;
+}
+
+.win-controls button:hover {
+  color: var(--cream);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.win-controls button.close:hover {
+  color: #ff6b5e;
+  background: rgba(255, 107, 94, 0.12);
+}
+
+.win-controls svg {
+  display: block;
+}
+
+/* ---------- 页脚（状态栏 + 点阵括号） ---------- */
+
+.hud-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 7px 16px !important;
+  background: var(--bg-0) !important;
+  border-top: 1px solid var(--hair);
+}
+
+.hud-footer .stats {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  color: var(--cream-dim);
+}
+
+.hud-footer .stats b {
+  color: var(--gold);
+  font-family: var(--latin);
+  font-weight: 600;
+  letter-spacing: 1px;
+  margin-left: 4px;
+}
+
+.hud-footer .foot-tag {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font: 400 8.5px/1 var(--latin);
+  letter-spacing: 2px;
+  color: var(--cream-dim);
+  white-space: nowrap;
+}
+
+/* ---------- 硬朗滑杆（原生 range，菱形滑块） ---------- */
+
+input[type='range'].hud-slider {
+  height: 22px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  display: block;
+  cursor: pointer;
+  margin: 0;
+}
+
+input[type='range'].hud-slider::-webkit-slider-runnable-track {
+  height: 4px;
+  background:
+    linear-gradient(90deg, var(--gold), var(--gold-bright)) 0 / var(--pct, 50%) 100% no-repeat,
+    rgba(255, 255, 255, 0.1);
+}
+
+input[type='range'].hud-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px;
+  height: 12px;
+  margin-top: -4px;
+  background: var(--gold-bright);
+  border: none;
+  transform: rotate(45deg);
+  box-shadow: 0 0 10px rgba(201, 172, 103, 0.85);
+  transition: box-shadow 0.12s var(--ease);
+}
+
+input[type='range'].hud-slider:active::-webkit-slider-thumb {
+  box-shadow: 0 0 16px rgba(230, 207, 149, 1);
+}
+
+/* ---------- 播放器区域 ---------- */
+
+.player-host {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  background: #000;
+  overflow: hidden;
+}
+
+.player-host ruffle-player {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.drop-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: rgba(20, 22, 26, 0.88);
+  border: 1px dashed var(--gold);
+  color: var(--gold-bright);
+  font-size: 16px;
+  letter-spacing: 2px;
+  pointer-events: none;
+}
+
+/* 空状态引导 */
+.dropzone {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.dropzone .zh {
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: 4px;
+  color: var(--cream);
+}
+
+.dropzone .en {
+  font: 400 9px/1 var(--latin);
+  letter-spacing: 3.4px;
+  color: var(--gold);
+  margin-bottom: 8px;
+}
+
+/* 播放器工具条 */
+.player-tools {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 8px 10px;
+}
+
+/* ---------- 扫描统计读数行 ---------- */
+
+.scan-stats {
+  display: flex;
+  align-items: baseline;
+  gap: 22px;
+  padding: 2px 2px 0;
+}
+
+.scan-stats .side {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.scan-stats .side i {
+  font: 400 8px/1 var(--latin);
+  letter-spacing: 2.2px;
+  font-style: normal;
+  color: var(--gold-dim);
+}
+
+.scan-stats .side b {
+  font: 600 14px/1 var(--latin);
+  color: var(--cream);
+  letter-spacing: 0.5px;
+}
+
+/* ---------- 分段按钮（变速预设） ---------- */
+
+.seg {
+  display: flex;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.seg button {
+  position: relative;
+  flex: 1;
+  padding: 6px 0;
+  border: none;
+  background: none;
+  font: 600 12px/1 var(--latin);
+  letter-spacing: 1px;
+  color: var(--cream-dim);
+  cursor: pointer;
+  transition: color 0.18s var(--ease), background 0.18s var(--ease);
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.seg button:last-child {
+  border-right: none;
+}
+
+.seg button:hover {
+  color: var(--cream);
+}
+
+.seg button.active {
+  color: var(--gold-bright);
+  background: rgba(201, 172, 103, 0.18);
+  border-bottom: 1.5px solid var(--gold);
+  box-shadow: inset 0 -1px 0 var(--gold);
+}
+
+/* ---------- 带节点的发丝分割线 ---------- */
+
+.hud-divider {
+  position: relative;
+  height: 1px;
+  margin: 14px 0;
+  background: linear-gradient(90deg, transparent, var(--hair) 20%, var(--hair) 80%, transparent);
+}
+
+.hud-divider::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: -2.5px;
+  width: 5px;
+  height: 5px;
+  margin-left: -2.5px;
+  background: var(--gold-dim);
+  transform: rotate(45deg);
+}
+
+/* ---------- Tabs ---------- */
+
+.ant-tabs .ant-tabs-tab {
+  padding: 10px 2px 9px;
+}
+
+.ant-tabs .ant-tabs-tab .ant-tabs-tab-btn {
+  letter-spacing: 1px;
+}
+
+.tab-lat {
+  font: 400 8px/1 var(--latin);
+  letter-spacing: 2px;
+  color: var(--gold-dim);
+  margin-left: 7px;
+  font-style: normal;
+  vertical-align: 1px;
+}
+
+.ant-tabs .ant-tabs-tab-active .tab-lat {
+  color: var(--gold);
+}
+
+/* ---------- 滚动区 ---------- */
+
+.scroll-panel {
+  overflow: auto;
+  min-height: 0;
+  scrollbar-width: thin;
+  scrollbar-color: var(--gold-dim) transparent;
+}
+
+.scroll-panel::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.scroll-panel::-webkit-scrollbar-thumb {
+  background: rgba(201, 172, 103, 0.25);
+}
+
+.scroll-panel::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ---------- 减少动态效果 ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
