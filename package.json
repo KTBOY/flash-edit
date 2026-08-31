@@ -22,11 +22,13 @@
       }
     ],
     "win": {
-      "target": "nsis"
+      "target": "nsis",
+      "icon": "resources/icon.ico"
     }
   },
   "scripts": {
     "postinstall": "node scripts/copy-ruffle.mjs",
+    "icon": "node scripts/make-icon.mjs",
     "dev": "electron-vite dev",
     "build": "electron-vite build",
     "preview": "electron-vite preview",

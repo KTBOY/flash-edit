@@ -12,6 +12,13 @@ import { disposeSwfProtocolHandler, registerSwfProtocolHandler, registerSwfSchem
 
 let mainWindow: BrowserWindow | null = null
 
+function appIconPath(): string {
+  const base = app.isPackaged
+    ? join(process.resourcesPath, 'resources')
+    : join(app.getAppPath(), 'resources')
+  return join(base, 'icon.png')
+}
+
 function createMainWindow(): BrowserWindow {
   // 默认尺寸按屏幕工作区收窄，小屏不溢出
   const { width: areaW, height: areaH } = screen.getPrimaryDisplay().workAreaSize
@@ -21,6 +28,7 @@ function createMainWindow(): BrowserWindow {
     minWidth: 1180,
     minHeight: 720,
     show: false,
+    icon: appIconPath(),
     // 无边框窗口：原生标题栏移除，由渲染层 hud-header 承担拖拽与窗口控制
     frame: false,
     backgroundColor: '#14161a',

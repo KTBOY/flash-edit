@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>应用图标 · 视觉稿</title>
+<style>
+  :root {
+    --gold: #c9ac67;
+    --gold-bright: #e6cf95;
+    --gold-dim: rgba(201, 172, 103, 0.3);
+    --cream: #fafae9;
+    --cream-dim: rgba(250, 250, 233, 0.45);
+    --latin: 'Bahnschrift', 'DIN Alternate', 'Segoe UI', sans-serif;
+    --zh: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    width: 960px;
+    min-height: 620px;
+    background: #0d0f12;
+    color: var(--cream);
+    font-family: var(--zh);
+    padding: 28px 36px 36px;
+  }
+  body.asset { padding: 0; min-height: 0; background: transparent; }
+  body.asset .sheet { display: none; }
+  body.asset .asset-box { display: block; }
+  .asset-box { display: none; width: 100vw; height: 100vh; }
+  .asset-box img { width: 100%; height: 100%; display: block; }
+
+  .head { display: flex; align-items: baseline; gap: 14px; margin-bottom: 26px; }
+  .head .mk { width: 3px; height: 16px; background: var(--gold); align-self: center; }
+  .head b { font-size: 16px; letter-spacing: 3px; font-weight: 600; }
+  .head i { font: 400 9px/1 var(--latin); letter-spacing: 3px; color: var(--gold-dim); font-style: normal; }
+
+  .row { display: flex; gap: 40px; align-items: flex-start; }
+  .hero img { width: 384px; height: 384px; display: block; box-shadow: 0 24px 60px rgba(0,0,0,.6); }
+  .hero .cap { margin-top: 10px; font: 400 9px/1 var(--latin); letter-spacing: 2.4px; color: var(--cream-dim); }
+
+  .sizes { display: flex; flex-direction: column; gap: 18px; padding-top: 6px; }
+  .size-item { display: flex; align-items: center; gap: 16px; }
+  .size-item img { display: block; }
+  .size-item .lbl { font: 600 12px/1 var(--latin); letter-spacing: 1.5px; color: var(--gold-bright); width: 64px; }
+  .size-item .note { font-size: 11px; color: var(--cream-dim); letter-spacing: .5px; }
+
+  .tokens { margin-top: 30px; display: flex; gap: 26px; }
+  .tok { display: flex; align-items: center; gap: 8px; font: 400 10px/1 var(--latin); letter-spacing: 1.5px; color: var(--cream-dim); }
+  .tok .sw { width: 14px; height: 14px; border: 1px solid rgba(255,255,255,.15); }
+</style>
+</head>
+<body>
+  <div class="asset-box"><img src="../../resources/icon.svg" alt="icon 512" /></div>
+
+  <div class="sheet">
+    <div class="head">
+      <span class="mk"></span>
+      <b>应用图标</b>
+      <i>APP ICON · RESONANCE HUD</i>
+    </div>
+
+    <div class="row">
+      <div class="hero">
+        <img src="../../resources/icon.svg" alt="icon" />
+        <div class="cap">512 × 512 · PRIMARY</div>
+      </div>
+
+      <div class="sizes">
+        <div class="size-item"><span class="lbl">256</span><img src="../../resources/icon.svg" width="256" height="256" alt="" style="width:128px;height:128px"><span class="note">资源管理器 / 任务栏大</span></div>
+        <div class="size-item"><span class="lbl">128</span><img src="../../resources/icon.svg" width="64" height="64" alt="" style="width:64px;height:64px"><span class="note">桌面快捷方式</span></div>
+        <div class="size-item"><span class="lbl">64</span><img src="../../resources/icon.svg" width="48" height="48" alt="" style="width:48px;height:48px"><span class="note">任务栏</span></div>
+        <div class="size-item"><span class="lbl">32</span><img src="../../resources/icon.svg" width="32" height="32" alt="" style="width:32px;height:32px"><span class="note">标题栏 / Alt-Tab</span></div>
+        <div class="size-item"><span class="lbl">16</span><img src="../../resources/icon.svg" width="16" height="16" alt="" style="width:16px;height:16px"><span class="note">窗口左上角</span></div>
+      </div>
+    </div>
+
+    <div class="tokens">
+      <div class="tok"><span class="sw" style="background:#14161a"></span>BG-0 #14161A</div>
+      <div class="tok"><span class="sw" style="background:#c9ac67"></span>GOLD #C9AC67</div>
+      <div class="tok"><span class="sw" style="background:#e6cf95"></span>BRIGHT #E6CF95</div>
+      <div class="tok">SQUARE CORNERS · HAIRLINE · L-BRACKETS</div>
+    </div>
+  </div>
+
+<script>
+  if (location.search.includes('asset')) document.body.classList.add('asset')
+</script>
+</body>
+</html>
