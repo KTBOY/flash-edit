@@ -11,7 +11,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const EDGE = 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe'
 const USER_DATA = join(process.env['TEMP'] ?? '/tmp', 'flash-icon-profile')
 const ASSET_URL =
-  'file:///' + join(ROOT, 'docs/mockups/app-icon.html').replace(/\\/g, '/') + '?asset=1'
+  'file:///' + join(ROOT, 'docs/mockups/app-icon.html').replace(/\\/g, '/')
 
 const ICO_SIZES = [256, 48, 32, 16]
 
@@ -52,7 +52,7 @@ async function renderSize(cdp, size) {
   await cdp.send('Emulation.setDeviceMetricsOverride', {
     width: size, height: size, deviceScaleFactor: 1, mobile: false
   })
-  await cdp.send('Page.navigate', { url: ASSET_URL })
+  await cdp.send('Page.navigate', { url: `${ASSET_URL}?asset=${size}` })
   await sleep(500)
   const shot = await cdp.send('Page.captureScreenshot', { format: 'png' })
   return Buffer.from(shot.data, 'base64')
