@@ -35,7 +35,7 @@ export default tseslint.config(
   },
   {
     files: ['**/*.mjs'],
-    languageOptions: { globals: NODE_GLOBALS }
+    languageOptions: { globals: { ...NODE_GLOBALS, fetch: 'readonly', WebSocket: 'readonly' } }
   },
   prettier
 )

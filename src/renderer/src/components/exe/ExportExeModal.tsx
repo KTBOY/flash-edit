@@ -5,6 +5,7 @@ import { strings } from '@renderer/locales/zh'
 import { buildSwfFileUrl } from '@shared/protocol'
 import { getApi } from '@renderer/services/ipc.service'
 import { getLoadedSwfSource } from '@renderer/services/game-launcher'
+import { toast } from '@renderer/services/ui-message'
 import { useGameStore } from '@renderer/store/useGameStore'
 import { useAppServices } from '@renderer/services/app-services'
 
@@ -98,7 +99,7 @@ export default function ExportExeModal({ open, onClose }: { open: boolean; onClo
         return
       }
       message.success(
-        `${strings.exe.packed}${result.path}（${formatBytes(result.exeSize)}）`
+        toast(`${strings.exe.packed}${result.path}（${formatBytes(result.exeSize)}）`, 5)
       )
       onClose()
     } catch (error) {
@@ -124,7 +125,10 @@ export default function ExportExeModal({ open, onClose }: { open: boolean; onClo
           return
         case 'saved':
           message.success(
-            `${strings.exe.unpackSaved}${result.path}（${result.magic} · ${formatBytes(result.swfSize ?? 0)}）`
+            toast(
+              `${strings.exe.unpackSaved}${result.path}（${result.magic} · ${formatBytes(result.swfSize ?? 0)}）`,
+              5
+            )
           )
           onClose()
           if (result.path && result.name) {

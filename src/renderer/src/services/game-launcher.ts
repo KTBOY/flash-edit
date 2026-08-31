@@ -1,9 +1,9 @@
-import { message } from 'antd'
 import type { GameRecord } from '@shared/types'
 import { buildSwfFileUrl } from '@shared/protocol'
 import { timeScaler } from '@renderer/core/runtime'
 import { sha256Hex, sha256HexOfString } from '@renderer/core/hash'
 import { getApi } from './ipc.service'
+import { toast, type UiMessageApi } from './ui-message'
 import type { PlayerController } from '@renderer/core/ruffle/player-controller'
 import { useCheatStore } from '@renderer/store/useCheatStore'
 import { useGameStore } from '@renderer/store/useGameStore'
@@ -23,7 +23,10 @@ export function getLoadedSwfSource(): { bytes: Uint8Array; name: string } | null
 }
 
 export class GameLauncher {
-  constructor(private readonly controller: PlayerController) {}
+  constructor(
+    private readonly controller: PlayerController,
+    private readonly message: UiMessageApi
+  ) {}
 
   /** 弹出系统对话框选择并加载 */
   async loadPickedFile(): Promise<void> {
@@ -39,7 +42,7 @@ export class GameLauncher {
   /** 处理拖拽进入的文件 */
   async loadDroppedFile(file: File): Promise<void> {
     if (!/\.(swf|spl)$/i.test(file.name)) {
-      message.warning('仅支持 .swf / .spl 文件')
+      this.message.warning(toast('仅支持 .swf / .spl 文件'))
       return
     }
     try {
@@ -54,7 +57,7 @@ export class GameLauncher {
   async loadFromUrl(url: string): Promise<void> {
     const normalized = url.trim()
     if (!/^https?:\/\//i.test(normalized)) {
-      message.error('请输入 http(s):// 开头的 SWF 地址')
+      this.message.error(toast('请输入 http(s):// 开头的 SWF 地址'))
       return
     }
     useGameStore.getState().beginLoad()
@@ -77,7 +80,7 @@ export class GameLauncher {
     if (record.path) {
       return this.loadLocalPath(record.path, record.name, record.size)
     }
-    message.warning('该记录来自拖拽加载，未保存本地路径，请重新拖入文件')
+    this.message.warning(toast('该记录来自拖拽加载，未保存本地路径，请重新拖入文件'))
   }
 
   /** 载入 oldswf 下载完成的本地文件（游戏库记录保留 download 来源） */
@@ -164,9 +167,9 @@ export class GameLauncher {
           useGameStore.getState().setSpeed(profile.speed)
         }
         if (stale > 0) {
-          message.info(`已恢复 ${restored} 条修改，其中 ${stale} 条地址失效已停用`)
+          this.message.info(toast(`已恢复 ${restored} 条修改，其中 ${stale} 条地址失效已停用`))
         } else {
-          message.success(`已恢复 ${restored} 条修改`)
+          this.message.success(toast(`已恢复 ${restored} 条修改`))
         }
       }
     } catch {
@@ -176,7 +179,7 @@ export class GameLauncher {
 
   private fail(prefix: string, error: unknown): void {
     const detail = error instanceof Error ? error.message : String(error)
-    message.error(`${prefix}：${detail}`)
+    this.message.error(toast(`${prefix}：${detail}`))
     useGameStore.getState().failLoad(`${prefix}：${detail}`)
   }
 }

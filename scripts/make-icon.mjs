@@ -31,7 +31,9 @@ async function waitForCDP() {
     try {
       const res = await fetch('http://127.0.0.1:9224/json/version')
       if (res.ok) return
-    } catch {}
+    } catch {
+      // CDP 端口尚未就绪，继续重试
+    }
     await sleep(250)
   }
   throw new Error('CDP 端口未就绪')
@@ -93,7 +95,11 @@ try {
     if (msg.id && cdp.pending.has(msg.id)) {
       const { resolve, reject } = cdp.pending.get(msg.id)
       cdp.pending.delete(msg.id)
-      msg.error ? reject(new Error(msg.error.message)) : resolve(msg.result)
+      if (msg.error) {
+        reject(new Error(msg.error.message))
+      } else {
+        resolve(msg.result)
+      }
     }
   }
   await cdp.send('Page.enable')
