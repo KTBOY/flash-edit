@@ -7,6 +7,8 @@ import { useScanStore } from '@renderer/store/useScanStore'
 import { useTick } from '@renderer/hooks/useTick'
 import HudCard from '@renderer/components/common/HudCard'
 import HudSlider from '@renderer/components/common/HudSlider'
+import AboutSection from '@renderer/components/settings/AboutSection'
+import UnlockInput from '@renderer/components/settings/UnlockInput'
 
 const SPEED_PRESETS = [0.5, 1, 2, 3, 5]
 
@@ -22,7 +24,6 @@ export default function SettingsPanel() {
   const setSpeed = useGameStore((s) => s.setSpeed)
   const tolerance = useScanStore((s) => s.options.tolerance)
   const setOption = useScanStore((s) => s.setOption)
-  const appInfo = useGameStore((s) => s.appInfo)
   const tick = useTick(2000)
 
   const applySpeed = (value: number) => {
@@ -137,10 +138,8 @@ export default function SettingsPanel() {
           <span className="ln" />
           <span className="en">{strings.latin.about}</span>
         </div>
-        <Typography.Paragraph type="secondary" style={{ fontSize: 12 }}>
-          {strings.settings.aboutBody}
-          {appInfo ? `（Electron ${appInfo.electron}）` : ''}
-        </Typography.Paragraph>
+        <AboutSection />
+        <UnlockInput />
       </Space>
     </HudCard>
   )

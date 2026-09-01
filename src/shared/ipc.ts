@@ -37,7 +37,8 @@ export const IPC = {
   WINDOW_TOGGLE_MAXIMIZE: 'window:toggle-maximize',
   WINDOW_CLOSE: 'window:close',
   WINDOW_IS_MAXIMIZED: 'window:is-maximized',
-  WINDOW_MAXIMIZED_EVENT: 'window:maximized-changed'
+  WINDOW_MAXIMIZED_EVENT: 'window:maximized-changed',
+  SHELL_OPEN_EXTERNAL: 'shell:open-external'
 } as const
 
 /**
@@ -89,6 +90,11 @@ export interface IpcApi {
   isWindowMaximized(): Promise<boolean>
   /** 订阅最大化状态变化，返回取消订阅函数 */
   onWindowMaximized(callback: (maximized: boolean) => void): () => void
+  /**
+   * 用系统默认浏览器打开外部链接。
+   * 主进程侧强制 http/https 白名单，非白名单协议会被静默丢弃。
+   */
+  openExternal(url: string): void
 }
 
 /** preload 注入到 window 的全局键名 */

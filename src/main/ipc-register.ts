@@ -115,6 +115,19 @@ export function registerIpcHandlers(context: MainContext): () => void {
   // EXE 还原：选 projector 封装的 EXE，按尾部页脚提取附加 SWF 并另存
   ipcMain.handle(IPC.EXE_UNPACK_SAVE, () => unpackSwfFromExeFile(context.getMainWindow()))
 
+  // 外部链接：只允许 http/https，避免任意协议（file: / 自定义 scheme）被打开
+  ipcMain.on(IPC.SHELL_OPEN_EXTERNAL, (_event, url: string) => {
+    if (typeof url !== 'string' || !url) return
+    let parsed: URL
+    try {
+      parsed = new URL(url)
+    } catch {
+      return
+    }
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return
+    void shell.openExternal(parsed.href)
+  })
+
   // 无边框窗口控制：min/max/close 融合进自定义标题栏
   ipcMain.on(IPC.WINDOW_MINIMIZE, () => win()?.minimize())
   ipcMain.on(IPC.WINDOW_TOGGLE_MAXIMIZE, () => {

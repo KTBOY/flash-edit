@@ -1,9 +1,14 @@
 /** 界面文案集中管理（当前为 zh-CN，后续可扩展 i18n） */
+
+/** 作者个人网站：关于区展示，用系统默认浏览器打开 */
+export const SITE_URL = 'https://ktboy.github.io/sh-design/'
+
 export const strings = {
   latin: {
-    appTitle: 'FLASH GAME TRAINER',
+    appTitle: 'SHAN DIAN FLASH',
     stateOn: 'RUNTIME BRIDGED',
     stateIdle: 'STANDBY',
+    tabLibrary: 'LIBRARY',
     tabScan: 'SCAN',
     tabCheat: 'CHEATS',
     tabSettings: 'CONFIG',
@@ -19,7 +24,7 @@ export const strings = {
     synced: 'SYNCED'
   },
   app: {
-    title: 'Flash 游戏修改器',
+    title: '闪电Flash',
     subtitle: '通用 Flash 游戏修改器',
     disclaimer: '仅供本地单机游戏学习研究使用'
   },
@@ -27,6 +32,7 @@ export const strings = {
     openSwf: '打开 SWF',
     openUrl: '网络加载',
     library: '游戏库',
+    siderToggle: '功能面板',
     noGame: '未加载游戏',
     stateOn: '运行中'
   },
@@ -127,8 +133,11 @@ export const strings = {
     memoryTitle: 'WASM 内存块',
     memoryEmpty: '尚未检测到 WASM 内存（加载游戏后出现）',
     aboutTitle: '关于',
-    aboutBody:
-      '基于 Ruffle(WASM) 内存扫描的通用 Flash 游戏修改器。扫描地址仅当前会话有效，重开游戏后请重新扫描；修改配置会按游戏内容哈希自动恢复。'
+    aboutDevLabel: '开发',
+    aboutDev: '舒克开发',
+    aboutRuntimeLabel: '运行时',
+    aboutSiteLabel: '个人网站',
+    aboutRuntimeUnknown: '版本未知'
   },
   exe: {
     title: 'Flash ⇄ EXE（打包 / 还原）',
@@ -166,6 +175,7 @@ export const strings = {
     speed: '速度'
   },
   library: {
+    tab: '游戏库',
     title: '游戏库',
     empty: '暂无记录',
     reopen: '打开',
@@ -194,5 +204,11 @@ export const strings = {
     chunks: '分片',
     failedTitle: '下载失败',
     progressSuffix: '已完成'
+  },
+  unlock: {
+    placeholder: '输入密令解锁完整功能',
+    success: '已解锁完整模式',
+    failed: '密令无效',
+    unlocked: '当前为完整模式（数值扫描 / 修改列表 / 下载游戏已开启）'
   }
 } as const

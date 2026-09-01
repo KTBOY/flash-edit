@@ -32,7 +32,7 @@ function createMainWindow(): BrowserWindow {
     // 无边框窗口：原生标题栏移除，由渲染层 hud-header 承担拖拽与窗口控制
     frame: false,
     backgroundColor: '#14161a',
-    title: 'Flash Game Trainer',
+    title: '闪电Flash',
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: true,

@@ -8,7 +8,7 @@
   "private": true,
   "build": {
     "appId": "dev.flash.trainer",
-    "productName": "Flash Game Trainer",
+    "productName": "闪电Flash",
     "directories": {
       "output": "dist"
     },
@@ -23,7 +23,8 @@
     ],
     "win": {
       "target": "nsis",
-      "icon": "resources/icon.ico"
+      "icon": "resources/icon.ico",
+      "artifactName": "闪电Flash-v${version}-${arch}.${ext}"
     }
   },
   "scripts": {

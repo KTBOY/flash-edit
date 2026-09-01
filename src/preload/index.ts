@@ -62,7 +62,9 @@ const api: IpcApi = {
     return () => {
       ipcRenderer.removeListener(IPC.WINDOW_MAXIMIZED_EVENT, listener)
     }
-  }
+  },
+
+  openExternal: (url: string) => ipcRenderer.send(IPC.SHELL_OPEN_EXTERNAL, url)
 }
 
 contextBridge.exposeInMainWorld(IPC_BRIDGE_KEY, api)

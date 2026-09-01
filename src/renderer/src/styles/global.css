@@ -598,11 +598,110 @@ input[type='range'].hud-slider:active::-webkit-slider-thumb {
   color: var(--gold);
 }
 
+/*
+ * 侧边栏 Tabs：滚动容器下沉到内容区。
+ *
+ * 关键：nav 必须留在滚动容器之外。rc-tabs 在 nav/nav-wrap/nav-list 三层挂了
+ * resize-observer，一旦外层滚动条的显隐改变容器宽度，tab 偏移会被重新计算，
+ * 金色下划线（ink-bar，带 .3s transition）就会滑动、nav-list 的 transform 会跳变。
+ * nav 固定、只有内容滚动后，nav 宽度恒定，不再触发重测。
+ */
+.panel-tabs {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.panel-tabs > .ant-tabs-nav {
+  flex: none;
+  margin: 0;
+  padding: 4px 12px 0;
+}
+
+.panel-tabs > .ant-tabs-content-holder {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  /* 预留滚动条槽位：内容高度在临界值抖动时不会再改变容器宽度 */
+  scrollbar-gutter: stable;
+  padding: 8px 12px 12px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--gold-dim) transparent;
+}
+
+.panel-tabs > .ant-tabs-content-holder::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.panel-tabs > .ant-tabs-content-holder::-webkit-scrollbar-thumb {
+  background: rgba(201, 172, 103, 0.25);
+}
+
+.panel-tabs > .ant-tabs-content-holder::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ---------- 关于区 ---------- */
+
+.about-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.about-row {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  font-size: 12px;
+}
+
+.about-row .k {
+  flex: none;
+  width: 52px;
+  color: var(--cream-dim);
+  letter-spacing: 1px;
+}
+
+/* 长网址换行：避免撑破侧边栏 */
+.about-row .v {
+  min-width: 0;
+  word-break: break-all;
+  color: var(--cream);
+}
+
+/* ---------- 密令输入 ---------- */
+
+.unlock-input {
+  width: 100%;
+  margin-top: 12px;
+  padding: 6px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid rgba(201, 172, 103, 0.18);
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--cream);
+  font-size: 11px;
+  letter-spacing: 1px;
+  outline: none;
+  transition: border-color 0.18s var(--ease);
+}
+
+.unlock-input::placeholder {
+  color: rgba(250, 250, 233, 0.28);
+}
+
+.unlock-input:focus {
+  border-color: var(--gold-dim);
+}
+
 /* ---------- 滚动区 ---------- */
 
 .scroll-panel {
   overflow: auto;
   min-height: 0;
+  /* 预留滚动条槽位：内容高度在临界值抖动时不会再改变容器宽度 */
+  scrollbar-gutter: stable;
   scrollbar-width: thin;
   scrollbar-color: var(--gold-dim) transparent;
 }
