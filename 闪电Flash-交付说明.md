@@ -74,21 +74,24 @@
 | `npm run lint`（eslint 全仓） | ✅ 通过 |
 | `npm run test`（vitest 9 个文件 67 用例） | ✅ 全部通过 |
 | `npm run build`（electron-vite 三端构建） | ✅ 通过，产物 `out/renderer/index.html` 已含骨架与中文标题 |
-| `npm run dist`（NSIS 安装包） | ⚠️ 配置解析通过（electron-builder 已成功 `loaded configuration file=package.json` 并进入 packaging 阶段）；最终卡在本机环境：旧 `dist/win-unpacked` 文件被系统占用无法清理 |
+| `npm run dist`（NSIS 安装包） | ✅ 通过，产物 **`dist/build/闪电Flash-v0.1.0-x64.exe`**（125MB），解包版主程序 `dist/build/win-unpacked/闪电Flash.exe` |
 
-> **本会话内打包受阻的原因（与代码无关）**：
-> 1. `dist/win-unpacked` 里部分文件（`icudtl.dat` / `app.asar` / `v8_context_snapshot.bin`）显示 `Device or resource busy`，但系统中并无 electron 进程在运行，属文件被占用锁定；
-> 2. 改用临时输出目录重跑时，electron-builder 在本会话沙箱内长时间无输出（疑似下载/子进程被拦截），已终止。
->
-> **你本机出包的步骤**：
-> ```bash
-> # 1. 确认没有正在运行的旧版程序（任务管理器搜 闪电Flash / Flash Game Trainer）
-> # 2. 删除旧产物
-> rm -rf dist/win-unpacked
-> # 3. 出包
-> npm run dist
-> # 产物：dist/闪电Flash-v0.1.0-x64.exe
-> ```
+### 关于打包被锁问题的追加修复（第二轮）
+
+首轮 `npm run dist` 因 `dist/win-unpacked/resources/app.asar` 被系统占用而失败
+（electron-builder 每次打包都会**整个清空重建**输出目录，目录里只要有一个文件被锁就整体报 Go 堆栈）。
+该锁持续存在且系统中并无相关进程（排除「程序还在运行」后仍锁，属资源管理器预览窗格 / 杀毒扫描类的隐形占用）。
+已做两处修复：
+
+1. **输出目录迁到 `dist/build`**（`package.json` → `build.directories.output`）
+   —— 全新目录不含被锁文件，`EnsureEmptyDir` 不再撞锁；`dist/` 已在 .gitignore，无额外影响
+2. **新增 `scripts/clean-dist.mjs`** 并挂到 `predist` / `clean` 脚本：
+   - 结束「可执行文件位于本项目 dist 内」的旧版进程（只按路径匹配，不误伤其他程序）
+   - 对输出目录做带重试删除（`fs.rm maxRetries: 6`，对杀毒软件瞬时锁有效）
+   - 仍失败时列出具体被锁文件并给出中文排查指引，不再刷 Go 堆栈
+   - 旧的 `dist/win-unpacked` 作为遗留目录尽力清理，锁住则跳过（不再影响打包）
+
+> 旧 `dist/win-unpacked` 目前仍被锁，重启电脑后可手动删除；它已不参与打包流程。
 
 ### 需要你手工验收的点（无法在无界面会话中自动化）
 - [ ] 冷启动：无空窗/白闪，标题直接出现骨架再淡入 UI
@@ -108,6 +111,8 @@
 - `src/renderer/src/components/layout/ProfileAutoSaver.tsx` — 自动保存副作用隔离
 - `src/renderer/src/components/settings/AboutSection.tsx` — 关于区三行排版
 - `src/renderer/src/components/settings/UnlockInput.tsx` — 密令解锁入口
+- `scripts/clean-dist.mjs` — 打包前清理（结束 dist 内进程 + 带重试删输出目录 + 中文诊断）
+- `build/installer.nsh` — NSIS 完成页定制（「安装完成」标题 + 默认勾选「运行 闪电Flash」）
 
 **修改**
 - `package.json`、`src/main/index.ts`、`src/main/ipc-register.ts`、`src/shared/ipc.ts`、`src/preload/index.ts`
@@ -116,6 +121,41 @@
 - `src/renderer/src/components/library/GameLibraryPanel.tsx`（embedded 内嵌态）
 - `src/renderer/src/components/settings/SettingsPanel.tsx`、`components/common/HudSlider.tsx`
 - `src/renderer/src/styles/global.css`、`src/renderer/src/locales/zh.ts`
+
+---
+
+## 追加：安装向导（可指定安装目录）
+
+最初 `package.json` 里没有任何 `nsis` 配置，electron-builder 走默认 **`oneClick=true`** = 一键安装、
+不询问、直接装进 `%LOCALAPPDATA%\Programs\闪电Flash`。已改为带向导的安装界面（`build.nsis`）：
+
+| 配置 | 值 | 效果 |
+|---|---|---|
+| `oneClick` | `false` | 由一键安装改为**向导式安装**（会有「下一步 / 安装 / 完成」按钮） |
+| `perMachine` + `selectPerMachineByDefault` | `false` / `false` | 默认选中「**仅为我安装**」，直接下一步即可，**全程不弹 UAC、不需要管理员** |
+| `allowElevation` | `true` | 想装到 `C:\Program Files` 等受保护目录时，可勾「为所有用户安装」申请提权 |
+| `allowToChangeInstallationDirectory` | `true` | **出现「选择安装位置」页**，默认 `%LOCALAPPDATA%\Programs\闪电Flash`，可改成 `D:\游戏\闪电Flash` 等任意目录；所选目录末尾不含程序名时会自动补 `闪电Flash` 子目录 |
+| `installerLanguages` / `displayLanguageSelector` | `["zh_CN"]` / `false` | 安装向导为**中文**界面 |
+| `createDesktopShortcut` / `createStartMenuShortcut` | `true` / `true` | 桌面 + 开始菜单快捷方式 |
+| `runAfterFinish` | `true` | 装完可勾选立即运行 |
+| `deleteAppDataOnUninstall` | `false` | 卸载**保留用户数据**（已下载的游戏、修改配置） |
+
+> 说明：`oneClick:false` 且 `perMachine:false` 时，electron-builder 的向导**必然**包含一页
+> 「安装模式」（为所有用户 / 仅为我）——框架只有 `perMachine:true` 才会跳过这一页。
+> 默认已选「仅为我」，一路下一步就是每用户安装，不会弹管理员授权。
+
+**完成页「运行程序」提示（追加）**：新增 `build/installer.nsh`（electron-builder 自动 include 的
+buildResources 自定义脚本），把完成页定制为标准软件安装的收尾体验——
+
+- 标题改为 **「安装完成」**；
+- 正文提示：*闪电Flash 已安装到本机。「运行 闪电Flash」已默认勾选，点击「完成」即可立即打开程序。*
+- 勾选框文案 **「运行 闪电Flash」**，且**默认已勾选**（NSIS MUI2 原生行为）→ 点「完成」即启动程序。
+
+**验证**：electron-builder 会把完整生成的 .nsi 写进 `dist/build/builder-debug.yml`，已确认其中包含
+`!include "…\build\installer.nsh"`（位置在主安装流程之前，定义生效）以及
+`!insertmacro MUI_LANGUAGE "SimpChinese"`（且仅此一种语言）。
+
+文档：`docs/USAGE.md` 新增「安装与卸载」一节。
 
 ---
 

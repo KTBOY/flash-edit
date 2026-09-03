@@ -8,6 +8,25 @@ npm run dev     # 启动开发版
 npm run build && npm run dist   # 生产构建 / 打包 Windows 安装包
 ```
 
+## 安装与卸载
+
+`npm run dist` 产出 NSIS 安装包 `dist/build/闪电Flash-v{版本}-x64.exe`，双击后是**带向导的安装界面**（中文）：
+
+1. **安装模式**：默认选中「仅为我安装」——直接下一步即可，**不弹 UAC、不需要管理员**；
+   需要装到 `C:\Program Files` 这类受保护目录时，勾选「为所有用户安装」才会申请提权；
+2. **安装位置**：默认 `%LOCALAPPDATA%\Programs\闪电Flash`，可改成任意目录（如 `D:\游戏\闪电Flash`）。
+   若所选目录末尾不含程序名，安装器会自动补一层 `闪电Flash` 子目录；
+3. **完成页**：标题为「安装完成」，提示文案下方是**默认已勾选的「运行 闪电Flash」**——
+   直接点「完成」即可立即打开程序开始使用；
+4. 勾选项：桌面快捷方式、开始菜单快捷方式、安装后立即运行。
+
+卸载走「Windows 设置 → 应用」，**默认保留用户数据**（已下载的游戏与修改配置），
+如需连同数据一起清除，卸载后手动删除 `%APPDATA%\flash-game-trainer`。
+
+> 用户数据目录是 `%APPDATA%\flash-game-trainer\`（取 package.json 的 `name`，与界面上的
+> 品牌名无关）：`games\` 存下载的游戏，`data\games.json` 是游戏库，`data\profiles.json`
+> 是按游戏哈希自动恢复的修改配置。
+
 ## 加载游戏
 
 四种方式任选：

@@ -10,7 +10,7 @@
     "appId": "dev.flash.trainer",
     "productName": "闪电Flash",
     "directories": {
-      "output": "dist"
+      "output": "dist/build"
     },
     "files": [
       "out/**/*"
@@ -25,6 +25,20 @@
       "target": "nsis",
       "icon": "resources/icon.ico",
       "artifactName": "闪电Flash-v${version}-${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "selectPerMachineByDefault": false,
+      "allowElevation": true,
+      "allowToChangeInstallationDirectory": true,
+      "installerLanguages": ["zh_CN"],
+      "displayLanguageSelector": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "闪电Flash",
+      "runAfterFinish": true,
+      "deleteAppDataOnUninstall": false
     }
   },
   "scripts": {
@@ -39,6 +53,8 @@
     "test:watch": "vitest",
     "lint": "eslint .",
     "format": "prettier --write .",
+    "clean": "node scripts/clean-dist.mjs",
+    "predist": "node scripts/clean-dist.mjs",
     "dist": "electron-vite build && electron-builder --win"
   },
   "dependencies": {
