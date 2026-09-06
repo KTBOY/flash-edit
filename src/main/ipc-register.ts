@@ -95,7 +95,13 @@ export function registerIpcHandlers(context: MainContext): () => void {
       if (!targetPath) return { canceled: true, exeSize: 0, projectorSize: projector.length }
       const exe = buildProjectorExe(projector, swfBytes)
       await writeFile(targetPath, exe)
-      logger.info('exe-pack', `已生成独立 EXE：${targetPath}`)
+      logger.info(
+        'exe-pack',
+        `已生成独立 EXE：${targetPath}`,
+        `SWF ${(swfBytes.length / 1024 / 1024).toFixed(2)} MB ·`,
+        customProjector ? '自定义播放器' : '内置播放器',
+        `${(projector.length / 1024 / 1024).toFixed(2)} MB · 合计 ${(exe.length / 1024 / 1024).toFixed(2)} MB`
+      )
       return {
         canceled: false,
         path: targetPath,

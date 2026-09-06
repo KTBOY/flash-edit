@@ -1,7 +1,7 @@
 import { BrowserWindow, Menu, app, screen } from 'electron'
 import { join } from 'node:path'
 import { registerIpcHandlers } from './ipc-register'
-import { logger } from './infra/logger'
+import { initFileLogging, logger } from './infra/logger'
 import { disposeSwfProtocolHandler, registerSwfProtocolHandler, registerSwfSchemePrivileges } from './infra/protocol'
 
 /**
@@ -69,6 +69,7 @@ if (!gotSingleInstanceLock) {
   registerSwfSchemePrivileges()
 
   app.whenReady().then(() => {
+    initFileLogging(join(app.getPath('userData'), 'logs'))
     registerSwfProtocolHandler()
     const isDev = !app.isPackaged
     if (!isDev) Menu.setApplicationMenu(null)

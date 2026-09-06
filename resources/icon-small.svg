@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- 闪电Flash · 小尺寸图标（32/48px 用）：仅保留 L 角标 + 菱形外框 + 闪电主体 -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0.25" y2="1">
+      <stop offset="0" stop-color="#1b1e23"/>
+      <stop offset="0.62" stop-color="#14161a"/>
+      <stop offset="1" stop-color="#101216"/>
+    </linearGradient>
+    <linearGradient id="bolt" x1="0" y1="0" x2="0.6" y2="1">
+      <stop offset="0" stop-color="#f0dcae"/>
+      <stop offset="0.5" stop-color="#e6cf95"/>
+      <stop offset="1" stop-color="#c9ac67"/>
+    </linearGradient>
+    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feDropShadow dx="0" dy="0" stdDeviation="10" flood-color="#c9ac67" flood-opacity="0.5"/>
+    </filter>
+  </defs>
+
+  <rect width="512" height="512" fill="url(#bg)"/>
+
+  <!-- L 形四角角标 -->
+  <g fill="none" stroke="#c9ac67" stroke-width="10">
+    <path d="M30 120 V30 H120"/>
+    <path d="M392 30 H482 V120"/>
+    <path d="M482 392 V482 H392"/>
+    <path d="M120 482 H30 V392"/>
+  </g>
+
+  <!-- 菱形外框 -->
+  <path d="M256 46 L466 256 L256 466 L46 256 Z" fill="none" stroke="#c9ac67" stroke-opacity="0.3" stroke-width="5"/>
+
+  <!-- 闪电主体 -->
+  <g transform="translate(101.8 114.4) scale(0.6)">
+    <path d="M296 52 L158 262 L238 262 L210 420 L356 198 L272 198 Z" fill="url(#bolt)" filter="url(#glow)"/>
+  </g>
+</svg>

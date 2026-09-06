@@ -68,8 +68,8 @@
         <div class="size-item"><span class="lbl">256</span><img src="../../resources/icon.svg" width="256" height="256" alt="" style="width:128px;height:128px"><span class="note">资源管理器 / 任务栏大</span></div>
         <div class="size-item"><span class="lbl">128</span><img src="../../resources/icon.svg" width="64" height="64" alt="" style="width:64px;height:64px"><span class="note">桌面快捷方式</span></div>
         <div class="size-item"><span class="lbl">64</span><img src="../../resources/icon.svg" width="48" height="48" alt="" style="width:48px;height:48px"><span class="note">任务栏</span></div>
-        <div class="size-item"><span class="lbl">32</span><img src="../../resources/icon.svg" width="32" height="32" alt="" style="width:32px;height:32px"><span class="note">标题栏 / Alt-Tab</span></div>
-        <div class="size-item"><span class="lbl">16</span><img src="../../resources/icon.svg" width="16" height="16" alt="" style="width:16px;height:16px"><span class="note">窗口左上角</span></div>
+        <div class="size-item"><span class="lbl">32</span><img src="../../resources/icon-small.svg" width="32" height="32" alt="" style="width:32px;height:32px"><span class="note">标题栏 / Alt-Tab</span></div>
+        <div class="size-item"><span class="lbl">16</span><img src="../../resources/icon-tiny.svg" width="16" height="16" alt="" style="width:16px;height:16px"><span class="note">窗口左上角</span></div>
       </div>
     </div>
 
@@ -87,6 +87,9 @@
     document.body.classList.add('asset')
     const box = document.querySelector('.asset-box')
     const img = box.querySelector('img')
+    // 小尺寸走简化变体（与墨枢同策略）：16px 仅闪电；32/48px 枢环 + 闪电
+    const variant = size <= 16 ? 'icon-tiny' : size <= 48 ? 'icon-small' : 'icon'
+    img.src = `../../resources/${variant}.svg`
     box.style.width = size + 'px'
     box.style.height = size + 'px'
     img.style.width = size + 'px'
