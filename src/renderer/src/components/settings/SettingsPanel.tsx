@@ -1,7 +1,10 @@
-import { List, Select, Space, Typography } from 'antd'
+import { useEffect, useState } from 'react'
+import { App as AntdApp, Button, List, Select, Space, Typography } from 'antd'
+import { FolderOpenOutlined } from '@ant-design/icons'
 import { strings } from '@renderer/locales/zh'
 import { MAX_SPEED, MIN_SPEED } from '@renderer/core/wasm/time-scaler'
 import { memoryTracker, timeScaler } from '@renderer/core/runtime'
+import { getApi } from '@renderer/services/ipc.service'
 import { useGameStore } from '@renderer/store/useGameStore'
 import { useScanStore } from '@renderer/store/useScanStore'
 import { useTick } from '@renderer/hooks/useTick'
@@ -25,6 +28,28 @@ export default function SettingsPanel() {
   const tolerance = useScanStore((s) => s.options.tolerance)
   const setOption = useScanStore((s) => s.setOption)
   const tick = useTick(2000)
+  const { message } = AntdApp.useApp()
+  const [downloadDir, setDownloadDir] = useState('')
+
+  // 载入当前生效的下载保存目录
+  useEffect(() => {
+    void getApi()
+      .getSettings()
+      .then((s) => setDownloadDir(s.downloadDir))
+      .catch(() => undefined)
+  }, [])
+
+  const changeDownloadDir = async () => {
+    try {
+      const next = await getApi().chooseDownloadDir()
+      if (next) {
+        setDownloadDir(next.downloadDir)
+        message.success('下载保存位置已更新')
+      }
+    } catch {
+      message.error('修改下载位置失败')
+    }
+  }
 
   const applySpeed = (value: number) => {
     const clamped = Math.min(MAX_SPEED, Math.max(MIN_SPEED, value))
@@ -128,6 +153,33 @@ export default function SettingsPanel() {
             )}
           />
         )}
+
+        <div className="hud-divider" />
+
+        {/* 下载设置：可修改网络游戏下载保存位置 */}
+        <div className="card-head">
+          <span className="mk" />
+          <span className="zh">{strings.settings.downloadTitle}</span>
+          <span className="ln" />
+          <span className="en">{strings.latin.downloadPath}</span>
+        </div>
+        <Space size={8} align="center" wrap>
+          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+            {strings.settings.downloadDirLabel}
+          </Typography.Text>
+          <Typography.Text
+            style={{ fontSize: 12, color: 'var(--cream-dim)', maxWidth: 260 }}
+            ellipsis={{ tooltip: downloadDir }}
+          >
+            {downloadDir || '…'}
+          </Typography.Text>
+          <Button size="small" icon={<FolderOpenOutlined />} onClick={() => void changeDownloadDir()}>
+            {strings.settings.changeDir}
+          </Button>
+        </Space>
+        <Typography.Paragraph type="secondary" style={{ fontSize: 12, marginTop: 4, marginBottom: 0 }}>
+          {strings.settings.downloadDirHint}
+        </Typography.Paragraph>
 
         <div className="hud-divider" />
 

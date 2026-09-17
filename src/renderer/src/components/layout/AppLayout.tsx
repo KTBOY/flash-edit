@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Button, Dropdown, Input, Layout, Space, Tabs } from 'antd'
 import {
-  CloudDownloadOutlined,
   ExportOutlined,
   FolderOpenOutlined,
   GlobalOutlined,
@@ -26,8 +25,15 @@ import StatusBar from './StatusBar'
 
 const { Header, Content } = Layout
 
-/** 侧边栏 Tab 标识；打包模式下 scan / cheat 会被过滤掉 */
+/** 侧边栏 Tab 标识 */
 type PanelTabKey = 'library' | 'scan' | 'cheat' | 'settings'
+
+/**
+ * 数值修改功能（数值扫描 + 修改列表）总开关。
+ * 置为 false 仅隐藏侧边栏入口，相关组件、store 与内存扫描逻辑完整保留，
+ * 恢复时改回 true 即可。
+ */
+const SHOW_CHEAT_FEATURES = false
 
 /** 小号拉丁副标，与中文标签并列 */
 function TabLabel({ zh, en }: { zh: string; en: string }) {
@@ -48,7 +54,6 @@ function LayoutHeader({
   const { launcher } = useAppServices()
   const phase = useGameStore((s) => s.phase)
   const game = useGameStore((s) => s.game)
-  const fullMode = useModeStore((s) => s.fullMode)
   const siderOpen = useModeStore((s) => s.siderOpen)
   const toggleSider = useModeStore((s) => s.toggleSider)
   const [urlText, setUrlText] = useState('')
@@ -140,12 +145,6 @@ function LayoutHeader({
             <Button icon={<GlobalOutlined />}>{strings.header.openUrl}</Button>
           </Dropdown>
 
-          {fullMode && (
-            <Button icon={<CloudDownloadOutlined />} onClick={() => onOpenDownload()}>
-              {strings.download.titleShort}
-            </Button>
-          )}
-
           <Button
             className="sider-toggle"
             icon={siderOpen ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
@@ -164,10 +163,9 @@ function LayoutHeader({
 
 /**
  * 右侧功能面板：游戏库 / 数值扫描 / 修改列表 / 设置。
- * 打包模式下只保留游戏库与设置；解锁完整模式后扫描与修改列表重新出现。
+ * 游戏库内置「下载新游戏」入口；数值修改（扫描 / 修改列表）受 SHOW_CHEAT_FEATURES 开关控制。
  */
 function ToolPanel({ onOpenDownload }: { onOpenDownload: (prefill?: string) => void }) {
-  const fullMode = useModeStore((s) => s.fullMode)
   const [activeKey, setActiveKey] = useState<PanelTabKey>('library')
 
   const items = useMemo(() => {
@@ -175,9 +173,7 @@ function ToolPanel({ onOpenDownload }: { onOpenDownload: (prefill?: string) => v
       {
         key: 'library',
         label: <TabLabel zh={strings.library.tab} en={strings.latin.tabLibrary} />,
-        children: (
-          <GameLibraryPanel onDownload={fullMode ? onOpenDownload : undefined} />
-        )
+        children: <GameLibraryPanel onDownload={onOpenDownload} />
       },
       {
         key: 'scan',
@@ -195,8 +191,10 @@ function ToolPanel({ onOpenDownload }: { onOpenDownload: (prefill?: string) => v
         children: <SettingsPanel />
       }
     ]
-    return fullMode ? all : all.filter((item) => item.key !== 'scan' && item.key !== 'cheat')
-  }, [fullMode, onOpenDownload])
+    return SHOW_CHEAT_FEATURES
+      ? all
+      : all.filter((item) => item.key !== 'scan' && item.key !== 'cheat')
+  }, [onOpenDownload])
 
   // 受控 activeKey：Tab 被模式过滤后，避免 rc-tabs 自动回退到 tabs[0] 造成跳 Tab
   useEffect(() => {

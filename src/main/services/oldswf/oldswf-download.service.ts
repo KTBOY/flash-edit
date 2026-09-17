@@ -100,8 +100,8 @@ export class OldswfDownloadService {
   private abortBrowser: (() => Promise<void>) | null = null
 
   constructor(
-    /** 下载保存目录（userData/games） */
-    private readonly gamesDir: string,
+    /** 下载保存目录取值器（用户可在设置中修改，未设置时回退 userData/games） */
+    private readonly getGamesDir: () => string,
     /** 进度回调（由 IPC 层转发给渲染进程） */
     private readonly emitProgress: (progress: OldswfDownloadProgress) => void
   ) {}
@@ -243,8 +243,9 @@ export class OldswfDownloadService {
 
     this.emit(gameId, 'saving', assembled.length, assembled.length, 1)
     const fileName = `${sanitizeFileName(title)}_${gameId}.swf`
-    await mkdir(this.gamesDir, { recursive: true })
-    const filePath = join(this.gamesDir, fileName)
+    const gamesDir = this.getGamesDir()
+    await mkdir(gamesDir, { recursive: true })
+    const filePath = join(gamesDir, fileName)
     await writeFile(filePath, assembled)
     logger.info(
       'oldswf-download',

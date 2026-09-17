@@ -52,6 +52,9 @@ const api: IpcApi = {
   },
   showFileInFolder: (path: string) => ipcRenderer.send(IPC.DOWNLOAD_SHOW_FILE, path),
 
+  getSettings: () => ipcRenderer.invoke(IPC.SETTINGS_GET),
+  chooseDownloadDir: () => ipcRenderer.invoke(IPC.SETTINGS_PICK_DIR),
+
   minimizeWindow: () => ipcRenderer.send(IPC.WINDOW_MINIMIZE),
   toggleMaximizeWindow: () => ipcRenderer.send(IPC.WINDOW_TOGGLE_MAXIMIZE),
   closeWindow: () => ipcRenderer.send(IPC.WINDOW_CLOSE),

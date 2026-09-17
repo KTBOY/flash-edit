@@ -1,5 +1,6 @@
 import type {
   AppInfo,
+  AppSettings,
   CheatProfile,
   ExePackResult,
   ExeUnpackResult,
@@ -33,6 +34,8 @@ export const IPC = {
   DOWNLOAD_OLDSWF_CANCEL: 'download:oldswf-cancel',
   DOWNLOAD_OLDSWF_PROGRESS: 'download:oldswf-progress',
   DOWNLOAD_SHOW_FILE: 'download:show-file',
+  SETTINGS_GET: 'settings:get',
+  SETTINGS_PICK_DIR: 'settings:pick-dir',
   WINDOW_MINIMIZE: 'window:minimize',
   WINDOW_TOGGLE_MAXIMIZE: 'window:toggle-maximize',
   WINDOW_CLOSE: 'window:close',
@@ -74,7 +77,7 @@ export interface IpcApi {
   unpackSwfFromExe(): Promise<ExeUnpackResult>
   /**
    * 从 oldswf.com 下载游戏 SWF（驱动本机真实浏览器监听分片，绕过 TLS 指纹反爬）。
-   * 单并发：进行中再次调用直接拒绝；完成后文件落在 userData/games 并自动入游戏库。
+   * 单并发：进行中再次调用直接拒绝；完成后文件落在设置中的下载目录（默认 userData/games）并自动入游戏库。
    */
   downloadOldswfGame(input: string): Promise<OldswfDownloadResult>
   /** 取消进行中的 oldswf 下载（关闭浏览器会话）；无进行中任务返回 false */
@@ -83,6 +86,10 @@ export interface IpcApi {
   onOldswfDownloadProgress(callback: (progress: OldswfDownloadProgress) => void): () => void
   /** 在系统文件管理器中显示文件 */
   showFileInFolder(path: string): void
+  /** 读取应用设置（含生效的下载保存目录） */
+  getSettings(): Promise<AppSettings>
+  /** 弹出目录选择框修改下载保存目录；取消返回 null，选中则持久化并返回新设置 */
+  chooseDownloadDir(): Promise<AppSettings | null>
   /* 无边框窗口控制（自定义标题栏） */
   minimizeWindow(): void
   toggleMaximizeWindow(): void

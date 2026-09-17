@@ -164,6 +164,12 @@ export interface OldswfDownloadProgress {
   chunkCount: number
 }
 
+/** 应用设置（持久化到 userData/data/settings.json） */
+export interface AppSettings {
+  /** 网络下载游戏的保存目录（生效值，未自定义时为主进程回填的默认目录） */
+  downloadDir: string
+}
+
 /** oldswf 下载结果 */
 export interface OldswfDownloadResult {
   gameId: string
