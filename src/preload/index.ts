@@ -3,7 +3,7 @@ import type {
   CheatProfile,
   ExePackResult,
   GameRecord,
-  OldswfDownloadProgress,
+  OldswfDownloadTask,
   SwfPatchReportItem,
   SwfPatchSpec,
   SwfSaveResult
@@ -19,7 +19,8 @@ const api: IpcApi = {
   pickSwfFile: () => ipcRenderer.invoke(IPC.DIALOG_PICK_SWF),
   listRecentGames: () => ipcRenderer.invoke(IPC.GAMES_LIST),
   addRecentGame: (record: GameRecord) => ipcRenderer.invoke(IPC.GAMES_ADD, record),
-  removeRecentGame: (hash: string) => ipcRenderer.invoke(IPC.GAMES_REMOVE, hash),
+  removeGames: (hashes: string[], deleteFiles: boolean) =>
+    ipcRenderer.invoke(IPC.GAMES_DELETE, hashes, deleteFiles),
   listProfiles: () => ipcRenderer.invoke(IPC.PROFILES_LIST),
   loadProfile: (gameHash: string) => ipcRenderer.invoke(IPC.PROFILES_LOAD, gameHash),
   saveProfile: (profile: CheatProfile) => ipcRenderer.invoke(IPC.PROFILES_SAVE, profile),
@@ -40,14 +41,16 @@ const api: IpcApi = {
     ipcRenderer.invoke(IPC.EXE_PACK_SAVE, swfBytes, defaultName, customProjector),
   unpackSwfFromExe: () => ipcRenderer.invoke(IPC.EXE_UNPACK_SAVE),
 
-  downloadOldswfGame: (input: string) => ipcRenderer.invoke(IPC.DOWNLOAD_OLDSWF, input),
-  cancelOldswfDownload: () => ipcRenderer.invoke(IPC.DOWNLOAD_OLDSWF_CANCEL),
-  onOldswfDownloadProgress: (callback: (progress: OldswfDownloadProgress) => void) => {
-    const listener = (_event: IpcRendererEvent, progress: OldswfDownloadProgress) =>
-      callback(progress)
-    ipcRenderer.on(IPC.DOWNLOAD_OLDSWF_PROGRESS, listener)
+  startOldswfDownload: (input: string) => ipcRenderer.invoke(IPC.DOWNLOAD_OLDSWF, input),
+  cancelOldswfDownload: (gameId: string) => ipcRenderer.invoke(IPC.DOWNLOAD_OLDSWF_CANCEL, gameId),
+  listOldswfDownloads: () => ipcRenderer.invoke(IPC.DOWNLOAD_OLDSWF_LIST),
+  removeOldswfDownloads: (gameIds: string[]) =>
+    ipcRenderer.invoke(IPC.DOWNLOAD_OLDSWF_REMOVE, gameIds),
+  onOldswfDownloadTask: (callback: (task: OldswfDownloadTask) => void) => {
+    const listener = (_event: IpcRendererEvent, task: OldswfDownloadTask) => callback(task)
+    ipcRenderer.on(IPC.DOWNLOAD_OLDSWF_TASK, listener)
     return () => {
-      ipcRenderer.removeListener(IPC.DOWNLOAD_OLDSWF_PROGRESS, listener)
+      ipcRenderer.removeListener(IPC.DOWNLOAD_OLDSWF_TASK, listener)
     }
   },
   showFileInFolder: (path: string) => ipcRenderer.send(IPC.DOWNLOAD_SHOW_FILE, path),

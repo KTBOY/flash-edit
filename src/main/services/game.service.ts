@@ -31,9 +31,15 @@ export class GameService {
     this.store.write({ version: 1, records: next.slice(0, MAX_RECORDS) })
   }
 
-  remove(hash: string): void {
+  /** 批量移除记录，返回被移除的记录（IPC 层据此判断哪些文件属于本应用下载） */
+  removeMany(hashes: string[]): GameRecord[] {
+    const target = new Set(hashes)
     const db = this.store.read()
-    this.store.write({ version: 1, records: db.records.filter((r) => r.hash !== hash) })
+    const removed = db.records.filter((r) => target.has(r.hash))
+    if (removed.length > 0) {
+      this.store.write({ version: 1, records: db.records.filter((r) => !target.has(r.hash)) })
+    }
+    return removed
   }
 }
 

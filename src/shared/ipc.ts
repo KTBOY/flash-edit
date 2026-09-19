@@ -5,8 +5,8 @@ import type {
   ExePackResult,
   ExeUnpackResult,
   GameRecord,
-  OldswfDownloadProgress,
-  OldswfDownloadResult,
+  GamesDeleteResult,
+  OldswfDownloadTask,
   SwfPatchReportItem,
   SwfPatchSpec,
   SwfPickResult,
@@ -21,7 +21,7 @@ export const IPC = {
   DIALOG_PICK_SWF: 'dialog:pick-swf',
   GAMES_LIST: 'games:list',
   GAMES_ADD: 'games:add',
-  GAMES_REMOVE: 'games:remove',
+  GAMES_DELETE: 'games:delete',
   PROFILES_LIST: 'profiles:list',
   PROFILES_LOAD: 'profiles:load',
   PROFILES_SAVE: 'profiles:save',
@@ -32,7 +32,9 @@ export const IPC = {
   EXE_UNPACK_SAVE: 'exe:unpack-save',
   DOWNLOAD_OLDSWF: 'download:oldswf',
   DOWNLOAD_OLDSWF_CANCEL: 'download:oldswf-cancel',
-  DOWNLOAD_OLDSWF_PROGRESS: 'download:oldswf-progress',
+  DOWNLOAD_OLDSWF_LIST: 'download:oldswf-list',
+  DOWNLOAD_OLDSWF_REMOVE: 'download:oldswf-remove',
+  DOWNLOAD_OLDSWF_TASK: 'download:oldswf-task',
   DOWNLOAD_SHOW_FILE: 'download:show-file',
   SETTINGS_GET: 'settings:get',
   SETTINGS_PICK_DIR: 'settings:pick-dir',
@@ -54,7 +56,12 @@ export interface IpcApi {
   pickSwfFile(): Promise<SwfPickResult | null>
   listRecentGames(): Promise<GameRecord[]>
   addRecentGame(record: GameRecord): Promise<void>
-  removeRecentGame(hash: string): Promise<void>
+  /**
+   * 批量移除游戏库记录。
+   * deleteFiles 为 true 时同时删除磁盘文件，但仅限位于下载目录内的文件——
+   * 目录外的原始文件只移除记录，避免误删用户自己电脑上的其它 SWF。
+   */
+  removeGames(hashes: string[], deleteFiles: boolean): Promise<GamesDeleteResult>
   listProfiles(): Promise<string[]>
   loadProfile(gameHash: string): Promise<CheatProfile | null>
   saveProfile(profile: CheatProfile): Promise<void>
@@ -76,14 +83,22 @@ export interface IpcApi {
   /** EXE 还原为 SWF：选 projector 封装的 EXE，按尾部页脚定位附加 SWF 并另存 */
   unpackSwfFromExe(): Promise<ExeUnpackResult>
   /**
-   * 从 oldswf.com 下载游戏 SWF（驱动本机真实浏览器监听分片，绕过 TLS 指纹反爬）。
-   * 单并发：进行中再次调用直接拒绝；完成后文件落在设置中的下载目录（默认 userData/games）并自动入游戏库。
+   * 提交 oldswf 下载任务（驱动本机真实浏览器监听分片，绕过 TLS 指纹反爬）。
+   * 多任务并发，超出并发上限自动排队；立即返回任务快照，进度经事件通道推送。
+   * 同一游戏 ID 正在下载或排队时拒绝。
    */
-  downloadOldswfGame(input: string): Promise<OldswfDownloadResult>
-  /** 取消进行中的 oldswf 下载（关闭浏览器会话）；无进行中任务返回 false */
-  cancelOldswfDownload(): Promise<boolean>
-  /** 订阅 oldswf 下载进度，返回取消订阅函数 */
-  onOldswfDownloadProgress(callback: (progress: OldswfDownloadProgress) => void): () => void
+  startOldswfDownload(input: string): Promise<OldswfDownloadTask>
+  /** 取消指定游戏 ID 的下载（关闭其浏览器会话）；无对应进行中任务返回 false */
+  cancelOldswfDownload(gameId: string): Promise<boolean>
+  /** 全部下载任务（含已结束），供渲染层初始化同步 */
+  listOldswfDownloads(): Promise<OldswfDownloadTask[]>
+  /**
+   * 按游戏 ID 批量移除下载任务记录（仅清列表，不删游戏库记录与磁盘文件）。
+   * 仍在排队或下载中的任务会先取消。
+   */
+  removeOldswfDownloads(gameIds: string[]): Promise<void>
+  /** 订阅下载任务状态与进度变化，返回取消订阅函数 */
+  onOldswfDownloadTask(callback: (task: OldswfDownloadTask) => void): () => void
   /** 在系统文件管理器中显示文件 */
   showFileInFolder(path: string): void
   /** 读取应用设置（含生效的下载保存目录） */

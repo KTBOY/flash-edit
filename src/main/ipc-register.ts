@@ -1,8 +1,9 @@
 import { app, dialog, ipcMain, shell } from 'electron'
 import type { BrowserWindow } from 'electron'
-import { writeFile } from 'node:fs/promises'
-import type { CheatProfile, GameRecord, SwfPatchSpec } from '@shared/types'
+import { unlink, writeFile } from 'node:fs/promises'
+import type { CheatProfile, GamesDeleteResult, GameRecord, SwfPatchSpec } from '@shared/types'
 import { IPC } from '@shared/ipc'
+import { isInsideDir } from './infra/paths'
 import { logger } from './infra/logger'
 import { pickSwfFile, pickSwfSavePath, pickDirectory } from './services/dialog.service'
 import { analyzeSwfPatch, patchSwf } from './services/swf-patch.service'
@@ -12,7 +13,7 @@ import {
   isWindowsExecutable,
   readBundledProjector
 } from './services/exe-pack.service'
-import { OldswfDownloadService } from './services/oldswf/oldswf-download.service'
+import { OldswfDownloadManager } from './services/oldswf/oldswf-download.service'
 import { unpackSwfFromExeFile } from './services/exe-unpack.service'
 import { GameService } from './services/game.service'
 import { ProfileService } from './services/profile.service'
@@ -40,11 +41,22 @@ export function registerIpcHandlers(context: MainContext): () => void {
   const settings = new SettingsService(app.getPath('userData'))
   const win = () => context.getMainWindow()
 
-  // oldswf 下载：保存目录由设置驱动（可在设置中修改，未设置时回退 userData/games），进度实时推送给渲染层
-  const oldswfDownloads = new OldswfDownloadService(
+  // oldswf 下载：多任务队列，保存目录由设置驱动（未设置时回退 userData/games），
+  // 落盘成功即刻登记游戏库，任务状态与进度实时推送给渲染层
+  const oldswfDownloads = new OldswfDownloadManager(
     () => settings.downloadDir(),
-    (progress) => {
-      win()?.webContents.send(IPC.DOWNLOAD_OLDSWF_PROGRESS, progress)
+    (task) => {
+      win()?.webContents.send(IPC.DOWNLOAD_OLDSWF_TASK, task)
+    },
+    (result, hash) => {
+      games.upsert({
+        hash,
+        name: result.name,
+        size: result.sizeBytes,
+        lastPlayed: new Date().toISOString(),
+        source: 'download',
+        path: result.path
+      })
     }
   )
 
@@ -58,7 +70,39 @@ export function registerIpcHandlers(context: MainContext): () => void {
 
   ipcMain.handle(IPC.GAMES_LIST, () => games.list())
   ipcMain.handle(IPC.GAMES_ADD, (_event, record: GameRecord) => games.upsert(record))
-  ipcMain.handle(IPC.GAMES_REMOVE, (_event, hash: string) => games.remove(hash))
+  ipcMain.handle(IPC.GAMES_DELETE, async (_event, hashes: unknown, deleteFiles: unknown) => {
+    const list = Array.isArray(hashes)
+      ? hashes.filter((hash): hash is string => typeof hash === 'string')
+      : []
+    const removed = games.removeMany(list)
+    const result: GamesDeleteResult = { deletedFiles: [], keptFiles: [], failedFiles: [] }
+    if (deleteFiles !== true) return result
+
+    const downloadDir = settings.downloadDir()
+    for (const record of removed) {
+      const path = record.path
+      if (!path) continue
+      if (!isInsideDir(path, downloadDir)) {
+        result.keptFiles.push(path)
+        continue
+      }
+      try {
+        await unlink(path)
+        result.deletedFiles.push(path)
+      } catch (error) {
+        result.failedFiles.push(path)
+        logger.warn(
+          'games',
+          `删除文件失败 ${path}：${error instanceof Error ? error.message : String(error)}`
+        )
+      }
+    }
+    logger.info(
+      'games',
+      `删除 ${removed.length} 条记录，其中文件已删 ${result.deletedFiles.length}、目录外保留 ${result.keptFiles.length}、失败 ${result.failedFiles.length}`
+    )
+    return result
+  })
 
   ipcMain.handle(IPC.PROFILES_LIST, () => profiles.list())
   ipcMain.handle(IPC.PROFILES_LOAD, (_event, hash: string) => profiles.load(hash))
@@ -112,9 +156,18 @@ export function registerIpcHandlers(context: MainContext): () => void {
     }
   )
 
-  // oldswf 游戏下载：启动 / 取消 / 进度事件 / 定位文件
-  ipcMain.handle(IPC.DOWNLOAD_OLDSWF, (_event, input: string) => oldswfDownloads.download(input))
-  ipcMain.handle(IPC.DOWNLOAD_OLDSWF_CANCEL, () => oldswfDownloads.cancel())
+  // oldswf 游戏下载：提交 / 取消 / 列表 / 清除已结束 / 任务事件 / 定位文件
+  ipcMain.handle(IPC.DOWNLOAD_OLDSWF, (_event, input: string) =>
+    oldswfDownloads.start(String(input ?? ''))
+  )
+  ipcMain.handle(IPC.DOWNLOAD_OLDSWF_CANCEL, (_event, gameId: string) =>
+    typeof gameId === 'string' ? oldswfDownloads.cancel(gameId) : false
+  )
+  ipcMain.handle(IPC.DOWNLOAD_OLDSWF_LIST, () => oldswfDownloads.list())
+  ipcMain.handle(IPC.DOWNLOAD_OLDSWF_REMOVE, (_event, gameIds: unknown) => {
+    if (!Array.isArray(gameIds)) return
+    oldswfDownloads.remove(gameIds.filter((id): id is string => typeof id === 'string'))
+  })
   ipcMain.on(IPC.DOWNLOAD_SHOW_FILE, (_event, path: string) => {
     if (typeof path === 'string' && path) shell.showItemInFolder(path)
   })

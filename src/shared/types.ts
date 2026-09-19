@@ -151,17 +151,49 @@ export interface GameRecord {
   url?: string
 }
 
-/** oldswf 下载进度（主进程 → 渲染进程事件推送） */
-export interface OldswfDownloadProgress {
+/**
+ * 游戏库批量删除结果。
+ * 记录一律移除；文件只在位于下载目录内时才删，目录外的原始文件保留（keptFiles）。
+ */
+export interface GamesDeleteResult {
+  /** 已从磁盘删除的文件绝对路径 */
+  deletedFiles: string[]
+  /** 因不在下载目录内而保留的文件绝对路径（仅移除了记录） */
+  keptFiles: string[]
+  /** 删除失败的文件绝对路径（文件被占用 / 权限不足等） */
+  failedFiles: string[]
+}
+
+/** 下载阶段：starting 启动浏览器 / downloading 监听分片 / extracting 页面缓存提取 / saving 落盘 */
+export type OldswfDownloadPhase = 'starting' | 'downloading' | 'extracting' | 'saving'
+
+/** 下载任务状态（queued 表示等待并发额度） */
+export type OldswfTaskStatus = 'queued' | 'running' | 'succeeded' | 'failed' | 'canceled'
+
+/**
+ * oldswf 下载任务快照（主进程 → 渲染进程）。
+ * 状态与进度合一：主进程是任务列表唯一事实来源，渲染层只做展示与操作。
+ */
+export interface OldswfDownloadTask {
+  /** 游戏 ID，同时作为任务标识 */
   gameId: string
-  /** starting 启动浏览器 / downloading 监听分片 / extracting 页面缓存提取 / saving 落盘 */
-  phase: 'starting' | 'downloading' | 'extracting' | 'saving'
+  /** 用户原始输入（游戏页地址或 ID），重试时复用 */
+  input: string
+  status: OldswfTaskStatus
+  /** 当前（或最后）阶段；queued 时为 null */
+  phase: OldswfDownloadPhase | null
   /** 已接收字节数（去重分片求和） */
   receivedBytes: number
   /** 总字节数；0 表示尚不可知 */
   totalBytes: number
   /** 已捕获分片数 */
   chunkCount: number
+  /** 成功后的落盘信息 */
+  result: OldswfDownloadResult | null
+  /** 失败原因（status 为 failed 时存在） */
+  error: string | null
+  /** 任务创建时间戳，用于列表排序 */
+  createdAt: number
 }
 
 /** 应用设置（持久化到 userData/data/settings.json） */

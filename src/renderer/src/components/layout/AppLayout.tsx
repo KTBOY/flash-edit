@@ -1,79 +1,37 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { Button, Dropdown, Input, Layout, Space, Tabs } from 'antd'
+import { useEffect, useState, type ReactNode } from 'react'
+import { Button, Layout, Space, Tabs } from 'antd'
 import {
   ExportOutlined,
   FolderOpenOutlined,
-  GlobalOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined
 } from '@ant-design/icons'
 import { strings } from '@renderer/locales/zh'
-import { isOldswfGamePageUrl } from '@shared/oldswf'
 import { useGameStore } from '@renderer/store/useGameStore'
-import { SIDER_WIDTH, useModeStore } from '@renderer/store/useModeStore'
+import { useDownloadStore } from '@renderer/store/useDownloadStore'
+import { SIDER_WIDTH, useUiStore } from '@renderer/store/useUiStore'
 import { AppServicesProvider, useAppServices } from '@renderer/services/app-services'
 import PlayerPanel from '@renderer/components/player/PlayerPanel'
 import ScanPanel from '@renderer/components/scan/ScanPanel'
 import CheatListPanel from '@renderer/components/cheat/CheatListPanel'
 import SettingsPanel from '@renderer/components/settings/SettingsPanel'
 import GameLibraryPanel from '@renderer/components/library/GameLibraryPanel'
+import DownloadPanel from '@renderer/components/download/DownloadPanel'
 import ExportExeModal from '@renderer/components/exe/ExportExeModal'
-import DownloadGameModal from '@renderer/components/download/DownloadGameModal'
 import ProfileAutoSaver from './ProfileAutoSaver'
 import WindowControls from './WindowControls'
 import StatusBar from './StatusBar'
 
 const { Header, Content } = Layout
 
-/** 侧边栏 Tab 标识 */
-type PanelTabKey = 'library' | 'scan' | 'cheat' | 'settings'
-
-/**
- * 数值修改功能（数值扫描 + 修改列表）总开关。
- * 置为 false 仅隐藏侧边栏入口，相关组件、store 与内存扫描逻辑完整保留，
- * 恢复时改回 true 即可。
- */
-const SHOW_CHEAT_FEATURES = false
-
-/** 小号拉丁副标，与中文标签并列 */
-function TabLabel({ zh, en }: { zh: string; en: string }) {
-  return (
-    <span>
-      {zh}
-      <em className="tab-lat">{en}</em>
-    </span>
-  )
-}
-
-/** 顶部栏：菱形标记 + 中英双语标题堆叠 + 运行状态 + 加载入口 */
-function LayoutHeader({
-  onOpenDownload
-}: {
-  onOpenDownload: (prefill?: string) => void
-}) {
+/** 顶部栏：菱形标记 + 中英双语标题堆叠 + 运行状态 + 本地载入入口 */
+function LayoutHeader() {
   const { launcher } = useAppServices()
   const phase = useGameStore((s) => s.phase)
   const game = useGameStore((s) => s.game)
-  const siderOpen = useModeStore((s) => s.siderOpen)
-  const toggleSider = useModeStore((s) => s.toggleSider)
-  const [urlText, setUrlText] = useState('')
-  const [urlOpen, setUrlOpen] = useState(false)
+  const siderOpen = useUiStore((s) => s.siderOpen)
+  const toggleSider = useUiStore((s) => s.toggleSider)
   const [exeModalOpen, setExeModalOpen] = useState(false)
-
-  const loading = phase === 'loading'
-
-  const openUrl = async () => {
-    const url = urlText.trim()
-    if (!url) return
-    setUrlOpen(false)
-    setUrlText('')
-    // oldswf 游戏页有 TLS 指纹反爬且不支持跨域，网络加载必失败 → 引导到下载流程
-    if (isOldswfGamePageUrl(url)) {
-      onOpenDownload(url)
-      return
-    }
-    await launcher.loadFromUrl(url)
-  }
 
   return (
     <Header className="hud-header">
@@ -105,7 +63,7 @@ function LayoutHeader({
           <Button
             type="primary"
             icon={<FolderOpenOutlined />}
-            loading={loading}
+            loading={phase === 'loading'}
             onClick={() => void launcher.loadPickedFile()}
           >
             {strings.header.openSwf}
@@ -114,36 +72,6 @@ function LayoutHeader({
           <Button icon={<ExportOutlined />} onClick={() => setExeModalOpen(true)}>
             {strings.exe.titleShort}
           </Button>
-
-          <Dropdown
-            open={urlOpen}
-            onOpenChange={setUrlOpen}
-            trigger={['click']}
-            popupRender={() => (
-              <div
-                style={{
-                  background: '#1f1f1f',
-                  padding: 8,
-                  borderRadius: 0,
-                  display: 'flex',
-                  gap: 8
-                }}
-              >
-                <Input
-                  style={{ width: 360 }}
-                  placeholder="https://example.com/game.swf"
-                  value={urlText}
-                  onChange={(e) => setUrlText(e.target.value)}
-                  onPressEnter={() => void openUrl()}
-                />
-                <Button type="primary" onClick={() => void openUrl()}>
-                  {strings.header.openUrl}
-                </Button>
-              </div>
-            )}
-          >
-            <Button icon={<GlobalOutlined />}>{strings.header.openUrl}</Button>
-          </Dropdown>
 
           <Button
             className="sider-toggle"
@@ -161,76 +89,54 @@ function LayoutHeader({
   )
 }
 
+/** 右侧功能面板：游戏库 / 网络下载 / 数值扫描 / 修改列表 / 设置 */
+type PanelTabKey = 'library' | 'download' | 'scan' | 'cheat' | 'settings'
+
 /**
- * 右侧功能面板：游戏库 / 数值扫描 / 修改列表 / 设置。
- * 游戏库内置「下载新游戏」入口；数值修改（扫描 / 修改列表）受 SHOW_CHEAT_FEATURES 开关控制。
+ * 数值修改功能（数值扫描 + 修改列表）总开关。
+ * 置为 false 仅隐藏侧边栏入口，相关组件、store 与内存扫描逻辑完整保留，
+ * 恢复时改回 true 即可。
  */
-function ToolPanel({ onOpenDownload }: { onOpenDownload: (prefill?: string) => void }) {
+const SHOW_CHEAT_FEATURES: boolean = false
+
+function ToolPanel() {
   const [activeKey, setActiveKey] = useState<PanelTabKey>('library')
 
-  const items = useMemo(() => {
-    const all: { key: PanelTabKey; label: ReactNode; children: ReactNode }[] = [
-      {
-        key: 'library',
-        label: <TabLabel zh={strings.library.tab} en={strings.latin.tabLibrary} />,
-        children: <GameLibraryPanel onDownload={onOpenDownload} />
-      },
-      {
-        key: 'scan',
-        label: <TabLabel zh={strings.scan.tab} en={strings.latin.tabScan} />,
-        children: <ScanPanel />
-      },
-      {
-        key: 'cheat',
-        label: <TabLabel zh={strings.cheat.tab} en={strings.latin.tabCheat} />,
-        children: <CheatListPanel />
-      },
-      {
-        key: 'settings',
-        label: <TabLabel zh={strings.settings.tab} en={strings.latin.tabSettings} />,
-        children: <SettingsPanel />
-      }
-    ]
-    return SHOW_CHEAT_FEATURES
-      ? all
-      : all.filter((item) => item.key !== 'scan' && item.key !== 'cheat')
-  }, [onOpenDownload])
-
-  // 受控 activeKey：Tab 被模式过滤后，避免 rc-tabs 自动回退到 tabs[0] 造成跳 Tab
-  useEffect(() => {
-    if (!items.some((item) => item.key === activeKey)) setActiveKey('library')
-  }, [items, activeKey])
+  const all: { key: PanelTabKey; label: string; children: ReactNode }[] = [
+    { key: 'library', label: strings.library.tab, children: <GameLibraryPanel /> },
+    { key: 'download', label: strings.download.tab, children: <DownloadPanel /> },
+    { key: 'scan', label: strings.scan.tab, children: <ScanPanel /> },
+    { key: 'cheat', label: strings.cheat.tab, children: <CheatListPanel /> },
+    { key: 'settings', label: strings.settings.tab, children: <SettingsPanel /> }
+  ]
+  const items = SHOW_CHEAT_FEATURES
+    ? all
+    : all.filter((item) => item.key !== 'scan' && item.key !== 'cheat')
 
   return (
     <Tabs
       className="panel-tabs"
-      items={items}
       activeKey={activeKey}
       onChange={(key) => setActiveKey(key as PanelTabKey)}
       tabBarGutter={20}
+      items={items}
     />
   )
 }
 
 /** 应用骨架：Header /（播放器 + 侧边栏）/ 状态栏 */
 function AppShell() {
-  const siderOpen = useModeStore((s) => s.siderOpen)
-  const [downloadOpen, setDownloadOpen] = useState(false)
-  const [downloadInput, setDownloadInput] = useState('')
+  const siderOpen = useUiStore((s) => s.siderOpen)
 
-  // 应用初始化：拉取版本信息与游戏库
+  // 应用初始化：版本信息与游戏库；下载任务事件全局订阅（面板切走也不掉进度）
   useEffect(() => {
     void useGameStore.getState().init()
-  }, [])
-
-  const openDownload = useCallback((prefill?: string) => {
-    if (prefill !== undefined) setDownloadInput(prefill)
-    setDownloadOpen(true)
+    useDownloadStore.getState().attach()
   }, [])
 
   return (
     <Layout style={{ height: '100vh' }}>
-      <LayoutHeader onOpenDownload={openDownload} />
+      <LayoutHeader />
       <Layout
         style={{
           flex: 1,
@@ -247,18 +153,13 @@ function AppShell() {
         </Content>
         {siderOpen && (
           <aside className="panel" style={{ flex: `0 0 ${SIDER_WIDTH}px`, minHeight: 0 }}>
-            <ToolPanel onOpenDownload={openDownload} />
+            <ToolPanel />
           </aside>
         )}
       </Layout>
       <StatusBar />
 
       <ProfileAutoSaver />
-      <DownloadGameModal
-        open={downloadOpen}
-        onClose={() => setDownloadOpen(false)}
-        initialInput={downloadInput}
-      />
     </Layout>
   )
 }

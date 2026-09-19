@@ -5,7 +5,6 @@ import { useGameStore } from '@renderer/store/useGameStore'
 import { useScanStore } from '@renderer/store/useScanStore'
 import { useCheatStore } from '@renderer/store/useCheatStore'
 import { useTick } from '@renderer/hooks/useTick'
-import { useModeStore } from '@renderer/store/useModeStore'
 
 const { Footer } = Layout
 
@@ -36,8 +35,6 @@ export default function StatusBar() {
   const summary = useScanStore((s) => s.summary)
   const entries = useCheatStore((s) => s.entries)
   const lockedCount = entries.filter((e) => e.locked).length
-  // 打包模式不暴露专家级指标（面板本身也是隐藏的）
-  const fullMode = useModeStore((s) => s.fullMode)
 
   return (
     <Footer className="hud-footer" data-tick={tick}>
@@ -48,20 +45,16 @@ export default function StatusBar() {
             {strings.status.memories}
             <b>{memoryTracker.count}</b>· {formatBytes(memoryTracker.totalBytes)}
           </span>
-          {fullMode && (
-            <>
-              <span>
-                {strings.status.candidates}
-                <b>{summary?.total ?? 0}</b>
-              </span>
-              <span>
-                {strings.status.cheats}
-                <b>
-                  {entries.length}/{lockedCount}
-                </b>
-              </span>
-            </>
-          )}
+          <span>
+            {strings.status.candidates}
+            <b>{summary?.total ?? 0}</b>
+          </span>
+          <span>
+            {strings.status.cheats}
+            <b>
+              {entries.length}/{lockedCount}
+            </b>
+          </span>
           <span>
             {strings.status.speed}
             <b>x{speed.toFixed(1)}</b>
