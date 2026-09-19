@@ -25,7 +25,10 @@ export function applyRuffleConfig(): void {
     maxExecutionDuration: 60,
     // 本工具面向本地单机游戏，禁用脚本访问降低风险
     allowScriptAccess: false,
-    preferredRenderer: 'auto'
+    preferredRenderer: 'auto',
+    // 中文老游戏的 SimSun/宋体 等只是设备字体（SWF 里是空壳字形），
+    // 默认的 embedded 渲染认不出来会让中文整段消失；canvas 走系统字体，与原版 Flash 一致。
+    deviceFontRenderer: 'canvas'
   }
   window.RufflePlayer = api
 }
