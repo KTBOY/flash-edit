@@ -34,6 +34,32 @@ export function isOldswfGamePageUrl(raw: string): boolean {
   return GAME_PAGE_RE.test(raw.trim())
 }
 
+/**
+ * 从游戏页 HTML 取出真实 SWF 路径（形如 `/data/extra/mxwsbcqwdb/game.swf`）。
+ *
+ * oldswf 的资源路径没有固定规律：目录见过 `/data/extra/<slug>/`、`/data/game/`、
+ * `/data/swf/`，文件名也不等于游戏 ID（页面 100 → 13278.swf）。唯一可靠来源是
+ * 页面交给播放器的 `loadSwf("...")` 实参，因此只能从 HTML 里读，不能按 ID 拼。
+ * 取不到返回 null，调用方需回退到浏览器捕获。
+ */
+export function extractSwfPath(html: string): string | null {
+  const matched = html.match(/\bloadSwf\(\s*(['"])([^'"]+?\.swf(?:[?#][^'"]*)?)\1\s*\)/)
+  const raw = matched?.[2]?.trim()
+  if (!raw) return null
+  try {
+    const url = new URL(raw, 'https://oldswf.com')
+    return url.pathname.endsWith('.swf') ? url.pathname : null
+  } catch {
+    return null
+  }
+}
+
+/** 从游戏页 HTML 的 h3 取游戏名（与页面标题元素一致），取不到返回 null */
+export function extractGameTitle(html: string): string | null {
+  const matched = html.match(/<h3[^>]*>\s*([^<]+?)\s*<\/h3>/i)
+  return matched?.[1]?.trim() || null
+}
+
 /** 文件名清洗：非法字符替换为下划线并限长 */
 export function sanitizeFileName(name: string): string {
   return name.replace(/[\\/:*?"<>|\s]+/g, '_').slice(0, 80)

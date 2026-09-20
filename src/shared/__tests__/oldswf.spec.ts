@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { isOldswfGamePageUrl, parseOldswfInput, sanitizeFileName } from '@shared/oldswf'
+import {
+  extractGameTitle,
+  extractSwfPath,
+  isOldswfGamePageUrl,
+  parseOldswfInput,
+  sanitizeFileName
+} from '@shared/oldswf'
 
 describe('parseOldswfInput', () => {
   it('纯数字 ID', () => {
@@ -49,5 +55,41 @@ describe('sanitizeFileName', () => {
 
   it('限长 80 字符', () => {
     expect(sanitizeFileName('a'.repeat(120)).length).toBe(80)
+  })
+})
+
+describe('extractSwfPath', () => {
+  const page = (literal: string): string =>
+    `<script>var swfBaseUrl = "/data/extra/x/";(function f(){typeof loadSwf==='function'?loadSwf("${literal}"):setTimeout(f,100)})();</script>`
+
+  it('实测的三种目录写法都能取到，且不依赖文件名等于游戏 ID', () => {
+    // 202914 → game.swf；100 → 13278.swf；30000 → 21309.swf
+    expect(extractSwfPath(page('/data/extra/mxwsbcqwdb/game.swf'))).toBe(
+      '/data/extra/mxwsbcqwdb/game.swf'
+    )
+    expect(extractSwfPath(page('/data/game/13278.swf'))).toBe('/data/game/13278.swf')
+    expect(extractSwfPath(page('/data/swf/21309.swf'))).toBe('/data/swf/21309.swf')
+  })
+
+  it('容忍绝对地址与查询串，只保留 pathname', () => {
+    expect(extractSwfPath(page('https://oldswf.com/data/game/9.swf?x=1'))).toBe(
+      '/data/game/9.swf'
+    )
+  })
+
+  it('页面无 loadSwf / 非 swf 资源时返回 null（交给浏览器兜底）', () => {
+    expect(extractSwfPath('<html>没有资源</html>')).toBeNull()
+    expect(extractSwfPath(page('/data/extra/x/preview.mp3'))).toBeNull()
+  })
+})
+
+describe('extractGameTitle', () => {
+  it('取 h3 中的游戏名', () => {
+    expect(extractGameTitle('<h3>\n  冒险王之神兵传奇   </h3>')).toBe('冒险王之神兵传奇')
+  })
+
+  it('缺失或空标题返回 null', () => {
+    expect(extractGameTitle('<h3>   </h3>')).toBeNull()
+    expect(extractGameTitle('<p>x</p>')).toBeNull()
   })
 })
