@@ -53,3 +53,16 @@ export async function pickSwfSavePath(
   if (result.canceled || !result.filePath) return null
   return result.filePath
 }
+
+/** 弹出系统目录选择框，返回选中目录；取消返回 null */
+export async function pickDirectory(
+  parent?: BrowserWindow | null,
+  title = '选择目录'
+): Promise<string | null> {
+  const result = await dialog.showOpenDialog(parent ?? (undefined as never), {
+    title,
+    properties: ['openDirectory', 'createDirectory']
+  })
+  if (result.canceled || result.filePaths.length === 0) return null
+  return result.filePaths[0]
+}
