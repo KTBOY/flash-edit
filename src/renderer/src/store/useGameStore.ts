@@ -60,6 +60,10 @@ export const useGameStore = create<GameStore>((set) => ({
     } catch {
       // 忽略：appInfo 仅展示用
     }
+    // 下载目录文件被外部增删/移动时（主进程 fs.watch 推送），自动刷新游戏库
+    getApi().onGamesChanged(() => {
+      void useGameStore.getState().refreshRecent()
+    })
     await store.refreshRecent()
   }
 }))

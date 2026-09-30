@@ -1,6 +1,22 @@
-import { useEffect, useState } from 'react'
-import { App as AntdApp, Button, Checkbox, Empty, Input, List, Pagination, Typography } from 'antd'
-import { DeleteOutlined, PlayCircleOutlined, SearchOutlined } from '@ant-design/icons'
+import { useEffect, useRef, useState } from 'react'
+import {
+  App as AntdApp,
+  Button,
+  Checkbox,
+  Empty,
+  Input,
+  List,
+  Modal,
+  Pagination,
+  Typography,
+  type InputRef
+} from 'antd'
+import {
+  DeleteOutlined,
+  EditOutlined,
+  PlayCircleOutlined,
+  SearchOutlined
+} from '@ant-design/icons'
 import type { GameRecord } from '@shared/types'
 import { strings } from '@renderer/locales/zh'
 import { getApi } from '@renderer/services/ipc.service'
@@ -36,6 +52,10 @@ export default function GameLibraryPanel({ embedded = true }: { embedded?: boole
   const [downloadDir, setDownloadDir] = useState('')
   const [query, setQuery] = useState('')
   const [page, setPage] = useState(1)
+  const [renaming, setRenaming] = useState<GameRecord | null>(null)
+  const [renameValue, setRenameValue] = useState('')
+  const [renameSaving, setRenameSaving] = useState(false)
+  const renameInputRef = useRef<InputRef>(null)
 
   useEffect(() => {
     void getApi()
@@ -43,6 +63,13 @@ export default function GameLibraryPanel({ embedded = true }: { embedded?: boole
       .then((s) => setDownloadDir(s.downloadDir))
       .catch(() => undefined)
   }, [])
+
+  // 弹窗打开后聚焦并全选，方便直接输入覆盖旧名
+  useEffect(() => {
+    if (!renaming) return
+    const timer = window.setTimeout(() => renameInputRef.current?.focus(), 50)
+    return () => window.clearTimeout(timer)
+  }, [renaming])
 
   const keyword = query.trim().toLowerCase()
   const filtered = keyword
@@ -64,6 +91,38 @@ export default function GameLibraryPanel({ embedded = true }: { embedded?: boole
     setSelected((prev) =>
       prev.includes(hash) ? prev.filter((item) => item !== hash) : [...prev, hash]
     )
+  }
+
+  const openRename = (record: GameRecord): void => {
+    setRenaming(record)
+    setRenameValue(record.name)
+  }
+
+  const submitRename = async (): Promise<void> => {
+    const target = renaming
+    if (!target) return
+    const name = renameValue.trim()
+    if (!name) return
+    setRenameSaving(true)
+    try {
+      const ok = await getApi().renameGame(target.hash, name)
+      if (!ok) {
+        message.error(strings.library.renameFailed)
+        return
+      }
+      // 正在游玩的同一游戏：同步头部显示名
+      const current = useGameStore.getState().game
+      if (current && current.hash === target.hash) {
+        useGameStore.setState({ game: { ...current, name } })
+      }
+      await refreshRecent()
+      message.success(strings.library.renameDone)
+      setRenaming(null)
+    } catch {
+      message.error(strings.library.renameFailed)
+    } finally {
+      setRenameSaving(false)
+    }
   }
 
   const confirmDelete = (targets: string[]): void => {
@@ -180,14 +239,26 @@ export default function GameLibraryPanel({ embedded = true }: { embedded?: boole
                     size="small"
                     type="link"
                     icon={<PlayCircleOutlined />}
-                    disabled={!record.path && record.source !== 'url'}
+                    disabled={record.missing === true || (!record.path && record.source !== 'url')}
                     title={
-                      !record.path && record.source !== 'url' ? strings.library.dropOnly : undefined
+                      record.missing
+                        ? strings.library.fileMissing
+                        : !record.path && record.source !== 'url'
+                          ? strings.library.dropOnly
+                          : undefined
                     }
                     onClick={() => void launcher.reopen(record)}
                   >
                     {strings.library.reopen}
                   </Button>,
+                  <Button
+                    key="rename"
+                    size="small"
+                    type="text"
+                    icon={<EditOutlined />}
+                    title={strings.library.rename}
+                    onClick={() => openRename(record)}
+                  />,
                   <Button
                     key="del"
                     size="small"
@@ -210,6 +281,11 @@ export default function GameLibraryPanel({ embedded = true }: { embedded?: boole
                   >
                     {record.name}
                   </Typography.Text>
+                  {record.missing && (
+                    <Typography.Text type="danger" style={{ fontSize: 11, display: 'block' }}>
+                      {strings.library.fileMissing}
+                    </Typography.Text>
+                  )}
                   <Typography.Text type="secondary" style={{ fontSize: 11 }}>
                     {new Date(record.lastPlayed).toLocaleString()}
                   </Typography.Text>
@@ -231,6 +307,30 @@ export default function GameLibraryPanel({ embedded = true }: { embedded?: boole
           )}
         </>
       )}
+
+      <Modal
+        title={strings.library.renameTitle}
+        open={renaming !== null}
+        onCancel={() => setRenaming(null)}
+        width={380}
+        okText={strings.library.renameOk}
+        cancelText={strings.library.confirmCancel}
+        okButtonProps={{ disabled: renameValue.trim().length === 0 }}
+        confirmLoading={renameSaving}
+        onOk={() => void submitRename()}
+      >
+        <Input
+          ref={renameInputRef}
+          value={renameValue}
+          maxLength={100}
+          placeholder={strings.library.renamePlaceholder}
+          onFocus={(e) => e.target.select()}
+          onChange={(e) => setRenameValue(e.target.value)}
+          onPressEnter={() => {
+            if (renameValue.trim().length > 0 && !renameSaving) void submitRename()
+          }}
+        />
+      </Modal>
     </div>
   )
 }

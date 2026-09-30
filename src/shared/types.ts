@@ -149,6 +149,8 @@ export interface GameRecord {
   /** 本地文件绝对路径（drop 场景拿不到） */
   path?: string
   url?: string
+  /** 磁盘文件已不存在（games:list 返回时按 path 实时标注，不持久化） */
+  missing?: boolean
 }
 
 /**

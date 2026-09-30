@@ -1,6 +1,6 @@
 import { app, dialog, ipcMain, shell } from 'electron'
 import type { BrowserWindow } from 'electron'
-import { unlink, writeFile } from 'node:fs/promises'
+import { access, unlink, writeFile } from 'node:fs/promises'
 import type { CheatProfile, GamesDeleteResult, GameRecord, SwfPatchSpec } from '@shared/types'
 import { IPC } from '@shared/ipc'
 import { isInsideDir } from './infra/paths'
@@ -16,6 +16,7 @@ import {
 import { OldswfDownloadManager } from './services/oldswf/oldswf-download.service'
 import { unpackSwfFromExeFile } from './services/exe-unpack.service'
 import { GameService } from './services/game.service'
+import { LibraryWatcher } from './services/library-watcher.service'
 import { ProfileService } from './services/profile.service'
 import { SettingsService } from './services/settings.service'
 
@@ -40,6 +41,16 @@ export function registerIpcHandlers(context: MainContext): () => void {
   const profiles = new ProfileService(app.getPath('userData'))
   const settings = new SettingsService(app.getPath('userData'))
   const win = () => context.getMainWindow()
+
+  // 下载目录文件监听：外部增删/移动游戏文件后推送刷新事件，
+  // 渲染层收到后重拉游戏库；目录在设置中变更时同步重挂监听
+  const libraryWatcher = new LibraryWatcher(() => {
+    const current = win()
+    if (current && !current.isDestroyed()) {
+      current.webContents.send(IPC.GAMES_FS_CHANGED)
+    }
+  })
+  libraryWatcher.start(settings.downloadDir())
 
   // oldswf 下载：多任务队列，保存目录由设置驱动（未设置时回退 userData/games），
   // 落盘成功即刻登记游戏库，任务状态与进度实时推送给渲染层
@@ -68,7 +79,22 @@ export function registerIpcHandlers(context: MainContext): () => void {
 
   ipcMain.handle(IPC.DIALOG_PICK_SWF, () => pickSwfFile(context.getMainWindow()))
 
-  ipcMain.handle(IPC.GAMES_LIST, () => games.list())
+  // 游戏库列表：按记录里的 path 实时核对磁盘文件，已不存在的标注 missing，
+  // 渲染层据此显示"文件丢失"并禁用打开（记录本身保留，删除与否由用户决定）
+  ipcMain.handle(IPC.GAMES_LIST, async () => {
+    const records = games.list()
+    await Promise.all(
+      records.map(async (record) => {
+        if (!record.path) return
+        try {
+          await access(record.path)
+        } catch {
+          record.missing = true
+        }
+      })
+    )
+    return records
+  })
   ipcMain.handle(IPC.GAMES_ADD, (_event, record: GameRecord) => games.upsert(record))
   ipcMain.handle(IPC.GAMES_DELETE, async (_event, hashes: unknown, deleteFiles: unknown) => {
     const list = Array.isArray(hashes)
@@ -90,6 +116,11 @@ export function registerIpcHandlers(context: MainContext): () => void {
         await unlink(path)
         result.deletedFiles.push(path)
       } catch (error) {
+        // 文件已被外部删除（如资源管理器手动删除）：目的已达，不算失败
+        if ((error as NodeJS.ErrnoException)?.code === 'ENOENT') {
+          result.deletedFiles.push(path)
+          continue
+        }
         result.failedFiles.push(path)
         logger.warn(
           'games',
@@ -102,6 +133,14 @@ export function registerIpcHandlers(context: MainContext): () => void {
       `删除 ${removed.length} 条记录，其中文件已删 ${result.deletedFiles.length}、目录外保留 ${result.keptFiles.length}、失败 ${result.failedFiles.length}`
     )
     return result
+  })
+
+  // 游戏库重命名：只改记录显示名，不触碰磁盘文件；入参不合法时静默失败
+  ipcMain.handle(IPC.GAMES_RENAME, (_event, hash: unknown, name: unknown) => {
+    if (typeof hash !== 'string' || typeof name !== 'string') return false
+    const trimmed = name.trim()
+    if (!trimmed) return false
+    return games.rename(hash, trimmed)
   })
 
   ipcMain.handle(IPC.PROFILES_LIST, () => profiles.list())
@@ -177,8 +216,10 @@ export function registerIpcHandlers(context: MainContext): () => void {
   ipcMain.handle(IPC.SETTINGS_PICK_DIR, async () => {
     const dir = await pickDirectory(context.getMainWindow(), '选择游戏下载保存目录')
     if (!dir) return null
+    const next = settings.setDownloadDir(dir)
+    libraryWatcher.start(next.downloadDir)
     logger.info('settings', `下载保存目录已修改：${dir}`)
-    return settings.setDownloadDir(dir)
+    return next
   })
 
   // EXE 还原：选 projector 封装的 EXE，按尾部页脚提取附加 SWF 并另存

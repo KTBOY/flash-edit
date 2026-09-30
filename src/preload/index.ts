@@ -21,6 +21,14 @@ const api: IpcApi = {
   addRecentGame: (record: GameRecord) => ipcRenderer.invoke(IPC.GAMES_ADD, record),
   removeGames: (hashes: string[], deleteFiles: boolean) =>
     ipcRenderer.invoke(IPC.GAMES_DELETE, hashes, deleteFiles),
+  renameGame: (hash: string, name: string) => ipcRenderer.invoke(IPC.GAMES_RENAME, hash, name),
+  onGamesChanged: (callback: () => void) => {
+    const listener = () => callback()
+    ipcRenderer.on(IPC.GAMES_FS_CHANGED, listener)
+    return () => {
+      ipcRenderer.removeListener(IPC.GAMES_FS_CHANGED, listener)
+    }
+  },
   listProfiles: () => ipcRenderer.invoke(IPC.PROFILES_LIST),
   loadProfile: (gameHash: string) => ipcRenderer.invoke(IPC.PROFILES_LOAD, gameHash),
   saveProfile: (profile: CheatProfile) => ipcRenderer.invoke(IPC.PROFILES_SAVE, profile),

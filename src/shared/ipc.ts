@@ -22,6 +22,8 @@ export const IPC = {
   GAMES_LIST: 'games:list',
   GAMES_ADD: 'games:add',
   GAMES_DELETE: 'games:delete',
+  GAMES_RENAME: 'games:rename',
+  GAMES_FS_CHANGED: 'games:fs-changed',
   PROFILES_LIST: 'profiles:list',
   PROFILES_LOAD: 'profiles:load',
   PROFILES_SAVE: 'profiles:save',
@@ -62,6 +64,16 @@ export interface IpcApi {
    * 目录外的原始文件只移除记录，避免误删用户自己电脑上的其它 SWF。
    */
   removeGames(hashes: string[], deleteFiles: boolean): Promise<GamesDeleteResult>
+  /**
+   * 重命名游戏库记录的显示名（不改动磁盘文件名）。
+   * 名字去掉首尾空白后须非空；记录不存在或名字非法返回 false。
+   */
+  renameGame(hash: string, name: string): Promise<boolean>
+  /**
+   * 订阅下载目录文件变化事件（主进程 fs.watch 防抖后推送）。
+   * 外部增删/移动游戏文件后渲染层据此刷新游戏库列表，返回取消订阅函数。
+   */
+  onGamesChanged(callback: () => void): () => void
   listProfiles(): Promise<string[]>
   loadProfile(gameHash: string): Promise<CheatProfile | null>
   saveProfile(profile: CheatProfile): Promise<void>

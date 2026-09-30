@@ -27,6 +27,7 @@ src/
 │     ├─ dialog.service.ts    #   文件选择
 │     ├─ storage.service.ts   #   JsonStore：临时文件 + rename 原子写
 │     ├─ game.service.ts      #   游戏库（最近游玩）
+│     ├─ library-watcher.service.ts #  下载目录 fs.watch：外部文件变化 → 推送游戏库刷新
 │     ├─ profile.service.ts   #   修改配置（按游戏哈希）
 │     └─ oldswf/              #   oldswf.com 游戏下载（playwright-core 驱动系统浏览器）
 │        ├─ oldswf-download.service.ts # 下载编排：监听分片 → 重组 → IndexedDB 兜底 → 落盘
