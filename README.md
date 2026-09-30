@@ -2,7 +2,7 @@
   <b>⚡ Flash Game Trainer</b><br/>
   通用 Flash 游戏播放器 · 基于 Ruffle(WASM) 模拟运行<br/>
   游戏运行 · 游戏下载 · 游戏库 · 打包/还原 EXE · 变速齿轮
-</p>
+</
 
 ---
 
@@ -33,11 +33,22 @@ npm install      # 自动复制 Ruffle 运行时
 npm run dev      # 开发模式
 ```
 
-打包 Windows 安装包：
+## 打包发布
 
 ```bash
-npm run dist
+npm run dist     # 一步到位：清理旧产物 → electron-vite build → electron-builder --win
 ```
+
+产物输出目录 `dist/build/`（由 `package.json` 的 `build.directories.output` 配置，每次打包前自动清空）：
+
+| 文件 | 说明 |
+| --- | --- |
+| `闪电Flash-v{版本}-x64.exe` | NSIS 安装包：双击向导安装，分发用这个 |
+| `闪电Flash-v{版本}-x64.exe.blockmap` | 增量更新校验文件 |
+| `win-unpacked\闪电Flash.exe` | 免安装裸程序：双击直接运行（调试 / 绿色版） |
+
+若只想产出资源而不生成安装包，单独跑 `npm run build`（输出到 `out/`）。
+安装包与免安装版的操作步骤见 [docs/USAGE.md](docs/USAGE.md)「安装与卸载」。
 
 ## 使用方法
 
@@ -45,11 +56,11 @@ npm run dist
 
 ## 文档
 
-| 文档 | 内容 |
-| --- | --- |
-| [docs/FEASIBILITY.md](docs/FEASIBILITY.md) | 可行性分析：四条技术路线对比、逐项可行性、已知限制 |
+| 文档                                      | 内容                                                         |
+| ----------------------------------------- | ------------------------------------------------------------ |
+| [docs/FEASIBILITY.md](docs/FEASIBILITY.md)   | 可行性分析：四条技术路线对比、逐项可行性、已知限制           |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | 架构：补丁时序、内存 detach 防护、引擎可测试性、类型安全 IPC |
-| [docs/USAGE.md](docs/USAGE.md) | 操作教程与常见问题 |
+| [docs/USAGE.md](docs/USAGE.md)               | 操作教程与常见问题                                           |
 
 ## 技术栈
 
@@ -72,4 +83,8 @@ npm run format      # Prettier
 
 ## License
 
-[MIT](LICENSE) · Ruffle 运行时遵循 Apache-2.0 / MIT 双许可
+[Apache License 2.0](LICENSE) · [中文参考译文](LICENSE.zh-cn.md)（不具法律效力，以英文官方文本为准）
+
+- 商标与命名声明、第三方组件许可、用途与免责声明见 [NOTICE](NOTICE)
+- 「闪电Flash」/ `Flash Game Trainer` 及项目图标为许可方商标，本许可证不授予任何商标使用权
+- Ruffle 运行时遵循 Apache-2.0 / MIT 双许可，其许可副本随 `src/renderer/public/ruffle/` 一并分发，不得移除

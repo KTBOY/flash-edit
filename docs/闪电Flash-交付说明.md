@@ -1,6 +1,6 @@
 # 闪电Flash —— 交付说明
 
-工作目录：`E:\work\gogogogo\flash-edit` ｜ 分支 `main`
+工作目录：`D:\my\flash-edit` ｜ 分支 `main`
 
 ---
 

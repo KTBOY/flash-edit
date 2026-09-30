@@ -4,7 +4,7 @@
   "description": "通用 Flash 游戏修改器：基于 Ruffle(WASM) 内存扫描与运行时修改，支持数值修改、锁定与变速",
   "main": "out/main/index.js",
   "author": "flash-game-trainer contributors",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "private": true,
   "build": {
     "appId": "dev.flash.trainer",

@@ -5,8 +5,13 @@
 ```bash
 npm install     # 会自动复制 Ruffle 运行时（postinstall）
 npm run dev     # 启动开发版
-npm run build && npm run dist   # 生产构建 / 打包 Windows 安装包
+npm run dist    # 生产构建 + 打包 Windows 安装包（内置 electron-vite build，无需先单独 build）
 ```
+
+打包产物统一输出到 `dist/build/`：安装包 `闪电Flash-v{版本}-x64.exe`（含 `.blockmap`）、
+免安装裸程序目录 `win-unpacked/`（直接跑 `win-unpacked\闪电Flash.exe`）。
+输出目录由 `package.json` 的 `build.directories.output` 配置，每次打包前由 `npm run clean`
+（`predist` 自动触发）清空——若上次打包后程序还开着，清理会自动结束旧进程再删。
 
 ## 安装与卸载
 

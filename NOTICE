@@ -1,0 +1,157 @@
+====================================================================
+NOTICE
+闪电Flash / Flash Game Trainer
+Copyright 2026 KTBOY (闪电Flash / Flash Game Trainer)
+
+This NOTICE file is provided pursuant to Section 4(d) of the Apache
+License, Version 2.0. Its contents are for informational purposes only
+and do NOT modify the terms of the License. The binding license text is
+the file named `LICENSE` (Apache License, Version 2.0, official English
+text). A non-binding Chinese reference translation is provided in
+`LICENSE.zh-cn.md`.
+====================================================================
+
+本 NOTICE 文件依据 Apache License 2.0 第 4(d) 条提供，内容仅供参考，
+不构成对本许可证条款的任何修改。具约束力的许可文本为本仓库 `LICENSE`
+文件中的 Apache License 2.0 英文官方文本；`LICENSE.zh-cn.md` 为不具备
+法律效力的中文参考译文。
+
+
+--------------------------------------------------------------------
+1. Trademark Notice / 商标与命名声明
+--------------------------------------------------------------------
+As set out in Section 6 of the Apache License 2.0, NO permission is
+granted to use the trade names, trademarks, service marks or product
+names of the Licensor, except as required for reasonable and customary
+use in describing the origin of the Work and reproducing the content of
+this NOTICE file.
+
+In particular, the following remain the marks of the Licensor and are
+not licensed hereunder:
+
+  * "闪电Flash"            (product name, Chinese)
+  * "Flash Game Trainer"    (product name, English)
+  * "flash-game-trainer"    (repository / package name)
+  * the project's application icon and UI marks
+    (resources/icon.svg, resources/icon.ico, resources/icon.png
+     and their variants)
+
+You may refer to these names to truthfully describe the origin and
+nature of this software. You may NOT distribute, market or promote a
+modified derivative version under these names, nor make (or allow to be
+understood) any statement implying endorsement, sponsorship or support
+by the Licensor. Please rename your derivative work.
+
+如 Apache License 2.0 第 6 条所约定，本许可证不授予使用许可方商业名称、
+商标、服务标记或产品名称的任何许可，除为合理且惯常地说明本作品来源、
+以及复制本 NOTICE 文件内容所必需的使用外。
+
+具体而言，下列标识为许可方的商标 / 产品名称，未在本许可下授予使用权：
+「闪电Flash」（中文产品名）、「Flash Game Trainer」（英文产品名）、
+「flash-game-trainer」（仓库名 / 包名）、以及本项目的应用图标与界面标识
+（resources/icon.svg、icon.ico、icon.png 及其变体）。
+
+您可以为如实说明本软件来源与性质而提及上述名称；但不得以该等名义分发、
+宣传或推广您自行修改的衍生版本，亦不得作出（或任由他人理解为）许可方对
+该版本予以认可、背书或提供支持之表示。请为您的衍生作品另行命名。
+
+
+--------------------------------------------------------------------
+2. Third-Party Components / 第三方组件
+--------------------------------------------------------------------
+Portions of this software are derived from or depend on third-party
+works which are NOT licensed under the above copyright and are governed
+by their own license terms. Full license texts are bundled with the
+distribution and must be retained:
+
+  * Ruffle — Apache-2.0 / MIT dual license
+      @ruffle-rs/ruffle, the WASM Flash runtime used to play SWF files.
+      License copies: src/renderer/public/ruffle/LICENSE_APACHE and
+      src/renderer/public/ruffle/LICENSE_MIT. The Ruffle core bundles
+      (core.ruffle.*.js, *.wasm) are third-party works.
+      You may comply with either of the two licenses at your option.
+
+  * Electron (incl. Chromium, Node.js and bundled modules) — MIT and
+    the applicable BSD-style licenses of its components.
+
+  * React, React DOM, Ant Design, @ant-design/icons, @ant-design/icons-
+    svg, zustand, nanoid — MIT.
+
+  * playwright-core — Apache-2.0.
+
+  * Resonance HUD design language (.agents/skills/resonance-hud/) —
+    subject to the license terms of its upstream repository.
+
+  * Adobe Flash Player standalone projector binary
+    (resources/flash-projector.exe) — THIRD-PARTY PROPRIETARY FREWARE.
+    It is NOT covered by the Apache License 2.0 grant above. The
+    Licensor of this project makes no grant whatsoever as to this
+    binary; the right to reproduce, distribute or use it is determined
+    solely by its own upstream terms and by applicable law. Verify that
+    you are entitled to ship it before redistributing a build that
+    bundles it.
+
+  * Any SWF file, game asset or other game content that you load,
+    download, package or distribute — remains subject to the rights of
+    its respective owners. This license grants nothing in respect of
+    game content.
+
+When redistributing this software (including in a packaged installer),
+you must retain all copyright, patent, trademark and attribution notices
+and ship the accompanying license files, per Section 4(a), (c) and (d)
+of the Apache License 2.0.
+
+本软件的若干部分来源于或依赖于第三方作品，该等部分不适用上述许可，而受
+其各自上游许可条款约束。完整许可文本已随发行包一同分发，不得移除：
+
+  * Ruffle（@ruffle-rs/ruffle，用于播放 SWF 的 WASM Flash 运行时）——
+    Apache-2.0 / MIT 双许可，您可任选其一遵守；其许可副本位于
+    src/renderer/public/ruffle/LICENSE_APACHE 与 LICENSE_MIT，
+    Ruffle 核心产物（core.ruffle.*.js、*.wasm）为第三方作品。
+  * Electron（含 Chromium、Node.js 及其内置模块）—— MIT 及相应
+    BSD 风格许可。
+  * React、React DOM、Ant Design、@ant-design/icons、
+    @ant-design/icons-svg、zustand、nanoid —— MIT。
+  * playwright-core —— Apache-2.0。
+  * Resonance HUD 设计语言（.agents/skills/resonance-hud/）——
+    依其上游仓库的许可条款。
+  * Adobe Flash Player 独立播放器二进制
+    （resources/flash-projector.exe）—— 第三方专有免费软件，不适用
+    上述 Apache License 2.0 授权。本项目许可方未就该二进制作出任何
+    授权，其复制、分发与使用的权利仅由其自身上游条款及适用法律决定；
+    在分发内含该二进制的构建包之前，请自行确认您有权再分发它。
+  * 您载入、下载、打包或分发的任何 SWF 文件、游戏资源或其他游戏内容
+    —— 仍属相应权利人之权利范围，本许可未就任何游戏内容作出授权。
+
+再分发本软件（含打包后的安装程序）时，请依 Apache License 2.0 第 4 条
+(a)、(c)、(d) 项保留全部版权、专利、商标与署名声明，并随附各许可文件。
+
+
+--------------------------------------------------------------------
+3. Intended Use & Disclaimer / 用途与免责声明
+--------------------------------------------------------------------
+This software is provided for study, research, and the preservation of
+local, single-player Flash games. Its use to undermine the fairness of
+online games, to circumvent payment or technological protection
+measures, or to interfere with other users' normal use of games or
+services is expressly discouraged.
+
+Users are solely responsible for the rights status of the game content
+they use, and for all consequences and legal liability arising from
+downloading, modifying, packaging or distributing such content.
+
+The software is provided on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+CONDITIONS OF ANY KIND, as set out in Sections 7 and 8 of the Apache
+License 2.0. In no event and under no legal theory shall the author or
+any contributor be liable for any damages arising from its use.
+
+本软件仅供对本地单机 Flash 游戏的学习、研究与旧游戏兼容保存之用。严禁
+用于任何破坏网络游戏公平性、绕过付费或技术保护措施、或干扰他人正常游戏
+与服务的场景。
+
+使用者须自行对所使用的游戏内容之权利状态负责，并自行承担因下载、修改、
+打包或传播相关内容而产生的一切后果与法律责任。
+
+依 Apache License 2.0 第 7、8 条，本软件按“原样”提供，不含任何形式的
+担保；在任何情况下、依任何法律理论，作者与各贡献者均不对因使用本软件
+而产生的任何损害承担责任。
