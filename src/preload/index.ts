@@ -1,9 +1,10 @@
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron'
 import type {
   CheatProfile,
+  DownloadSource,
+  DownloadTask,
   ExePackResult,
   GameRecord,
-  OldswfDownloadTask,
   SwfPatchReportItem,
   SwfPatchSpec,
   SwfSaveResult
@@ -49,22 +50,26 @@ const api: IpcApi = {
     ipcRenderer.invoke(IPC.EXE_PACK_SAVE, swfBytes, defaultName, customProjector),
   unpackSwfFromExe: () => ipcRenderer.invoke(IPC.EXE_UNPACK_SAVE),
 
-  startOldswfDownload: (input: string) => ipcRenderer.invoke(IPC.DOWNLOAD_OLDSWF, input),
-  cancelOldswfDownload: (gameId: string) => ipcRenderer.invoke(IPC.DOWNLOAD_OLDSWF_CANCEL, gameId),
-  listOldswfDownloads: () => ipcRenderer.invoke(IPC.DOWNLOAD_OLDSWF_LIST),
-  removeOldswfDownloads: (gameIds: string[]) =>
-    ipcRenderer.invoke(IPC.DOWNLOAD_OLDSWF_REMOVE, gameIds),
-  onOldswfDownloadTask: (callback: (task: OldswfDownloadTask) => void) => {
-    const listener = (_event: IpcRendererEvent, task: OldswfDownloadTask) => callback(task)
-    ipcRenderer.on(IPC.DOWNLOAD_OLDSWF_TASK, listener)
+  startDownload: (source: DownloadSource, input: string) =>
+    ipcRenderer.invoke(IPC.DOWNLOAD_SWF, source, input),
+  cancelDownload: (taskId: string) => ipcRenderer.invoke(IPC.DOWNLOAD_SWF_CANCEL, taskId),
+  listDownloads: () => ipcRenderer.invoke(IPC.DOWNLOAD_SWF_LIST),
+  removeDownloads: (taskIds: string[]) => ipcRenderer.invoke(IPC.DOWNLOAD_SWF_REMOVE, taskIds),
+  onDownloadTask: (callback: (task: DownloadTask) => void) => {
+    const listener = (_event: IpcRendererEvent, task: DownloadTask) => callback(task)
+    ipcRenderer.on(IPC.DOWNLOAD_SWF_TASK, listener)
     return () => {
-      ipcRenderer.removeListener(IPC.DOWNLOAD_OLDSWF_TASK, listener)
+      ipcRenderer.removeListener(IPC.DOWNLOAD_SWF_TASK, listener)
     }
   },
   showFileInFolder: (path: string) => ipcRenderer.send(IPC.DOWNLOAD_SHOW_FILE, path),
 
+  listSkills: () => ipcRenderer.invoke(IPC.SKILL_LIST),
+  readSkillMarkdown: (path: string) => ipcRenderer.invoke(IPC.SKILL_READ, path),
+
   getSettings: () => ipcRenderer.invoke(IPC.SETTINGS_GET),
   chooseDownloadDir: () => ipcRenderer.invoke(IPC.SETTINGS_PICK_DIR),
+  openDownloadFolder: () => ipcRenderer.invoke(IPC.SETTINGS_OPEN_DIR),
 
   minimizeWindow: () => ipcRenderer.send(IPC.WINDOW_MINIMIZE),
   toggleMaximizeWindow: () => ipcRenderer.send(IPC.WINDOW_TOGGLE_MAXIMIZE),

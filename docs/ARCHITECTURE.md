@@ -15,7 +15,9 @@ src/
 ├─ shared/                    # 跨进程共享层（唯一事实来源）
 │  ├─ types.ts                #   领域类型：ValueType/ScanRequest/CheatProfile/GameRecord…
 │  ├─ ipc.ts                  #   IPC 通道常量 + IpcApi 契约（preload 实现、renderer 依赖）
-│  ├─ oldswf.ts               #   oldswf 输入解析/文件名清洗（主进程下载与渲染层引导共用）
+│  ├─ download.ts             #   多站点下载共用：任务标识（来源:游戏ID）/文件名清洗
+│  ├─ oldswf.ts               #   oldswf 输入解析/页面取源/分片清单
+│  ├─ gamebox.ts              #   gamebox.tw 输入解析/对象存储地址解析
 │  └─ protocol.ts             #   swf-file:// 自定义协议 URL 构造/解析
 ├─ main/                      # 主进程
 │  ├─ index.ts                #   生命周期：单实例锁 → 协议注册 → 窗口 → IPC 装配
@@ -29,10 +31,16 @@ src/
 │     ├─ game.service.ts      #   游戏库（最近游玩）
 │     ├─ library-watcher.service.ts #  下载目录 fs.watch：外部文件变化 → 推送游戏库刷新
 │     ├─ profile.service.ts   #   修改配置（按游戏哈希）
-│     └─ oldswf/              #   oldswf.com 游戏下载（playwright-core 驱动系统浏览器）
-│        ├─ oldswf-download.service.ts # 下载编排：监听分片 → 重组 → IndexedDB 兜底 → 落盘
-│        ├─ chunk-assembler.ts #   分片重组/Content-Range/SWF 头（纯逻辑，可单测）
-│        └─ __tests__/         #   重组器单测
+│     ├─ skill.service.ts     #   项目 Agent Skill 扫描（.agents|.qoder/skills，读 SKILL.md）
+│     ├─ download/            #   多站点下载队列（站点无关的一层）
+│     │  ├─ provider.ts       #    SwfSourceProvider 契约：输入解析 + 把游戏页变成 SWF 字节
+│     │  └─ download-manager.ts #  并发排队/取消重试/进度节流/SWF 头校验/落盘命名/入库回调
+│     ├─ oldswf/              #   oldswf.com 站点 provider
+│     │  ├─ oldswf-provider.ts #   驱动系统浏览器读地址→直连，分片重组/IndexedDB 兜底
+│     │  ├─ chunk-assembler.ts #   分片重组/Content-Range/SWF 头（纯逻辑，可单测）
+│     │  └─ __tests__/        #    重组器单测
+│     └─ gamebox/             #   gamebox.tw 站点 provider（Node 直连 + Referer 取对象存储）
+│        └─ gamebox-provider.ts
 ├─ preload/
 │  └─ index.ts                # contextBridge 白名单暴露 IpcApi（sandbox 开启）
 └─ renderer/
@@ -57,8 +65,9 @@ src/
       ├─ store/               # Zustand 状态层（纯数据，不含引擎引用）
       │  ├─ useGameStore.ts   #   游戏会话/游戏库/速度
       │  ├─ useScanStore.ts   #   扫描会话状态机（首扫/再扫/撤销/重置）
-      │  └─ useCheatStore.ts  #   修改列表（冻结引擎的唯一事实来源）
-      ├─ components/          # UI 组件（layout / player / scan / cheat / settings / library / download）
+      │  ├─ useCheatStore.ts  #   修改列表（冻结引擎的唯一事实来源）
+      │  └─ useSkillStore.ts  #   本地 Skill 列表缓存（首次挂载拉取，手动刷新才重扫）
+      ├─ components/          # UI 组件（layout / player / scan / cheat / settings / library / download / skill）
       ├─ hooks/ useTick.ts    # 非响应式数据驱动刷新
       └─ locales/ zh.ts       # 文案集中管理
 ```
@@ -113,26 +122,45 @@ shared/ipc.ts(IpcApi) ── preload 实现 ── window.api ── renderer �
 `GameLauncher.finalize()`：扫描会话重置 → cheat 上下文切换 → 播放器加载 →
 游戏库记录 → 配置恢复。新增入口只需复用，不会漏步骤。
 
-### 7. oldswf 下载链路（获取游戏的第零步）
+### 7. 网络下载链路（获取游戏的第零步，多站点）
 
-oldswf.com 对游戏资源做 TLS 指纹反爬（非真实浏览器一律 404），且不支持跨域，
-所以「网络加载」到不了这里的游戏——下载器是 oldswf 内容进入应用的唯一入口：
+两个站点对「非真实浏览器/无来源页」的请求都不放行，所以「网络加载」到不了这些游戏——
+内置下载器是它们进入应用的唯一入口。站点差异全部收在 provider 里，队列与落盘只有一份：
 
 ```
-头部「下载游戏」/ 游戏库「下载新游戏」/ 网络加载输入 oldswf 游戏页 → 引导
-  → IPC download:oldswf → OldswfDownloadService（主进程，单并发，可取消）
-    → playwright-core 以无头模式驱动系统 Edge/Chrome（真实 TLS 指纹）
-    → 监听 /data/game_*/<id>.swf 的 200/206 响应，按 Content-Range 重组
-    → 分片缺失兜底：page 内 IndexedDB（swfFiles/blobs）提取
-    → SWF 头校验（FWS/CWS/ZWS）→ 写入 userData/games → 事件推送进度
-  → 完成后 GameLauncher.loadDownloadedFile 复用 finalize 链自动载入，
-    游戏库记录 source = 'download'
+侧边栏「网络下载」→ 选站点（oldswf / gamebox，各自独立输入框与任务列表）
+  → IPC download:swf(source, input) → DownloadManager（主进程，≤3 并发，可取消/重试）
+    → 按 source 取 provider：
+       oldswf  playwright-core 无头驱动系统 Edge/Chrome 打开游戏页取资源地址
+               → Node 直连全量拉取；失败退回监听站点分片（Content-Range 重组）
+               → 再兜底 page 内 IndexedDB（swfFiles/blobs）提取
+       gamebox Node 直连取游戏页 HTML → 解析页内对象存储地址
+               → 带 Referer（游戏页地址）全量拉取，无需浏览器
+    → SWF 头校验（FWS/CWS/ZWS）→ 按「清洗后标题_游戏ID.swf」写入下载目录
+    → 任务快照经 download:swf-task 事件推送；成功即登记游戏库（source = 'download'）
+  → 面板「打开」用 GameLauncher.loadDownloadedFile 复用 finalize 链自动载入
 ```
 
-设计要点：playwright-core 不携带浏览器内核（走系统浏览器，安装包零增量）；
-纯逻辑（输入解析 `@shared/oldswf`、分片重组）与浏览器 IO 分离，前者完整单测；
-main/preload 通过 `externalizeDepsPlugin` 保持依赖运行时 require，
-避免把 playwright-core 的可选依赖动态 import 打进 bundle。
+设计要点：任务标识是 `来源:游戏 ID`，两个站点的同号游戏不会互相覆盖；新增站点只需
+实现一个 provider 并注册进 DownloadManager，不动队列/落盘/渲染层。playwright-core 不
+携带浏览器内核（走系统浏览器，安装包零增量）；纯逻辑（输入解析 `@shared/oldswf`、
+`@shared/gamebox`、分片重组）与浏览器 IO 分离，前者完整单测；main/preload 通过
+`externalizeDepsPlugin` 保持依赖运行时 require，避免把 playwright-core 的可选依赖
+动态 import 打进 bundle。
+
+### 8. 项目 Skill 面板（看清流程有没有被读到）
+
+```
+侧边栏「Skill」→ useSkillStore（首次挂载拉取，手动刷新才重扫）
+  → IPC skill:list / skill:read → SkillService（主进程）
+    → 扫描根：仓库 .agents/skills 与 .qoder/skills（开发取 cwd，安装版取 exe 同级）
+    → 每个子目录读 SKILL.md → @shared/skill 解析 frontmatter（无 YAML 依赖）
+  → 按名称排序，两个根里同名的条目标为重复
+```
+
+设计要点：只看当前项目，全局与插件自带的 skill 不进列表，避免几十个不相干条目淹没仓库自己的流程；
+渲染层 sandbox 无 fs，扫描与读文件全在主进程，`skill:read` 用 `isInsideDir` 把可读路径限制在扫描根内，
+避免这条通道变成任意文件读取；重名不自动「择优」——谁生效是 Qoder 的事，面板只把冲突暴露出来。
 
 ## 变速齿轮的实现边界
 

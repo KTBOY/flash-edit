@@ -6,7 +6,10 @@ import type {
   ExeUnpackResult,
   GameRecord,
   GamesDeleteResult,
-  OldswfDownloadTask,
+  DownloadSource,
+  DownloadTask,
+  SkillItem,
+  SkillMarkdownResult,
   SwfPatchReportItem,
   SwfPatchSpec,
   SwfPickResult,
@@ -32,12 +35,15 @@ export const IPC = {
   SWF_PATCH_SAVE: 'swf:patch-save',
   EXE_PACK_SAVE: 'exe:pack-save',
   EXE_UNPACK_SAVE: 'exe:unpack-save',
-  DOWNLOAD_OLDSWF: 'download:oldswf',
-  DOWNLOAD_OLDSWF_CANCEL: 'download:oldswf-cancel',
-  DOWNLOAD_OLDSWF_LIST: 'download:oldswf-list',
-  DOWNLOAD_OLDSWF_REMOVE: 'download:oldswf-remove',
-  DOWNLOAD_OLDSWF_TASK: 'download:oldswf-task',
+  DOWNLOAD_SWF: 'download:swf',
+  DOWNLOAD_SWF_CANCEL: 'download:swf-cancel',
+  DOWNLOAD_SWF_LIST: 'download:swf-list',
+  DOWNLOAD_SWF_REMOVE: 'download:swf-remove',
+  DOWNLOAD_SWF_TASK: 'download:swf-task',
   DOWNLOAD_SHOW_FILE: 'download:show-file',
+  SETTINGS_OPEN_DIR: 'settings:open-dir',
+  SKILL_LIST: 'skill:list',
+  SKILL_READ: 'skill:read',
   SETTINGS_GET: 'settings:get',
   SETTINGS_PICK_DIR: 'settings:pick-dir',
   WINDOW_MINIMIZE: 'window:minimize',
@@ -95,28 +101,45 @@ export interface IpcApi {
   /** EXE 还原为 SWF：选 projector 封装的 EXE，按尾部页脚定位附加 SWF 并另存 */
   unpackSwfFromExe(): Promise<ExeUnpackResult>
   /**
-   * 提交 oldswf 下载任务（驱动本机真实浏览器监听分片，绕过 TLS 指纹反爬）。
+   * 提交指定来源的下载任务。来源由调用方（下载面板的站点入口）给定，
+   * 主进程据此选 provider：oldswf 驱动本机真实浏览器绕 TLS 指纹反爬，
+   * gamebox 直接带 Referer 取对象存储直链。
    * 多任务并发，超出并发上限自动排队；立即返回任务快照，进度经事件通道推送。
-   * 同一游戏 ID 正在下载或排队时拒绝。
+   * 同一来源的同一游戏 ID 正在下载或排队时拒绝。
    */
-  startOldswfDownload(input: string): Promise<OldswfDownloadTask>
-  /** 取消指定游戏 ID 的下载（关闭其浏览器会话）；无对应进行中任务返回 false */
-  cancelOldswfDownload(gameId: string): Promise<boolean>
+  startDownload(source: DownloadSource, input: string): Promise<DownloadTask>
+  /** 取消指定任务（关闭其浏览器会话/中断请求）；无对应进行中任务返回 false */
+  cancelDownload(taskId: string): Promise<boolean>
   /** 全部下载任务（含已结束），供渲染层初始化同步 */
-  listOldswfDownloads(): Promise<OldswfDownloadTask[]>
+  listDownloads(): Promise<DownloadTask[]>
   /**
-   * 按游戏 ID 批量移除下载任务记录（仅清列表，不删游戏库记录与磁盘文件）。
+   * 按任务标识批量移除下载任务记录（仅清列表，不删游戏库记录与磁盘文件）。
    * 仍在排队或下载中的任务会先取消。
    */
-  removeOldswfDownloads(gameIds: string[]): Promise<void>
+  removeDownloads(taskIds: string[]): Promise<void>
   /** 订阅下载任务状态与进度变化，返回取消订阅函数 */
-  onOldswfDownloadTask(callback: (task: OldswfDownloadTask) => void): () => void
+  onDownloadTask(callback: (task: DownloadTask) => void): () => void
   /** 在系统文件管理器中显示文件 */
   showFileInFolder(path: string): void
+  /**
+   * 扫描本地 Agent Skill（项目 / 用户全局 / 插件内置三类来源）。
+   * 结果已按来源与名称排序，并标出跨来源重名的条目。
+   */
+  listSkills(): Promise<SkillItem[]>
+  /**
+   * 读取指定 SKILL.md 正文（去掉 frontmatter）。
+   * 主进程只允许读取位于扫描根内的文件，越界或读不到返回 null。
+   */
+  readSkillMarkdown(path: string): Promise<SkillMarkdownResult | null>
   /** 读取应用设置（含生效的下载保存目录） */
   getSettings(): Promise<AppSettings>
   /** 弹出目录选择框修改下载保存目录；取消返回 null，选中则持久化并返回新设置 */
   chooseDownloadDir(): Promise<AppSettings | null>
+  /**
+   * 在系统文件管理器中打开当前生效的下载目录（目录路径只取自主进程设置）。
+   * 成功返回空串，失败返回系统给出的原因。
+   */
+  openDownloadFolder(): Promise<string>
   /* 无边框窗口控制（自定义标题栏） */
   minimizeWindow(): void
   toggleMaximizeWindow(): void

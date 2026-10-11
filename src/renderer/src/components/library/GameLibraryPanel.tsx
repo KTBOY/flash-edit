@@ -12,6 +12,7 @@ import {
   type InputRef
 } from 'antd'
 import {
+  CopyOutlined,
   DeleteOutlined,
   EditOutlined,
   PlayCircleOutlined,
@@ -20,6 +21,7 @@ import {
 import type { GameRecord } from '@shared/types'
 import { strings } from '@renderer/locales/zh'
 import { getApi } from '@renderer/services/ipc.service'
+import { copyText } from '@renderer/services/clipboard.service'
 import { useGameStore } from '@renderer/store/useGameStore'
 import { useAppServices } from '@renderer/services/app-services'
 
@@ -96,6 +98,14 @@ export default function GameLibraryPanel({ embedded = true }: { embedded?: boole
   const openRename = (record: GameRecord): void => {
     setRenaming(record)
     setRenameValue(record.name)
+  }
+
+  /** 复制游戏文件绝对路径；拖拽加载的记录拿不到路径，按钮同步置灰 */
+  const copyPath = async (record: GameRecord): Promise<void> => {
+    if (!record.path) return
+    const ok = await copyText(record.path)
+    if (ok) message.success(strings.library.copyPathDone)
+    else message.warning(strings.library.copyPathFailed)
   }
 
   const submitRename = async (): Promise<void> => {
@@ -251,6 +261,15 @@ export default function GameLibraryPanel({ embedded = true }: { embedded?: boole
                   >
                     {strings.library.reopen}
                   </Button>,
+                  <Button
+                    key="copy"
+                    size="small"
+                    type="text"
+                    icon={<CopyOutlined />}
+                    disabled={!record.path}
+                    title={record.path ? strings.library.copyPath : strings.library.dropOnly}
+                    onClick={() => void copyPath(record)}
+                  />,
                   <Button
                     key="rename"
                     size="small"

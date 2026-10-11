@@ -4,8 +4,7 @@ import {
   extractSwfPath,
   isOldswfGamePageUrl,
   parseFilesXml,
-  parseOldswfInput,
-  sanitizeFileName
+  parseOldswfInput
 } from '@shared/oldswf';
 
 describe('parseOldswfInput', () => {
@@ -46,16 +45,6 @@ describe('isOldswfGamePageUrl', () => {
 
   it('纯数字 ID 不算 URL', () => {
     expect(isOldswfGamePageUrl('109087')).toBe(false);
-  });
-});
-
-describe('sanitizeFileName', () => {
-  it('替换非法字符为下划线', () => {
-    expect(sanitizeFileName('闪客快打4:修改版?')).toBe('闪客快打4_修改版_');
-  });
-
-  it('限长 80 字符', () => {
-    expect(sanitizeFileName('a'.repeat(120)).length).toBe(80);
   });
 });
 

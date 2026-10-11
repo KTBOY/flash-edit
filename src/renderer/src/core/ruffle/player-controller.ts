@@ -12,6 +12,8 @@ export interface PlayerSource {
   /** 二进制内容（本地文件/拖拽），与 url 二选一 */
   data?: Uint8Array
   url?: string
+  /** 游戏所在目录的 URL，供 SWF 内部相对请求解析；缺省回落到页面 baseURI */
+  base?: string
 }
 
 export interface PlayerControllerEvents {
@@ -68,7 +70,7 @@ export class PlayerController {
     const seq = ++this.loadSeq
     this.destroyPlayer()
     try {
-      const player = await createRufflePlayer(container)
+      const player = await createRufflePlayer(container, source.base)
       if (seq !== this.loadSeq || this.container !== container) {
         player.remove()
         return

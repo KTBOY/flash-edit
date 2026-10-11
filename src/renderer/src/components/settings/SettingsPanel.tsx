@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { App as AntdApp, Button, Typography } from 'antd'
-import { FolderOpenOutlined } from '@ant-design/icons'
+import { ExportOutlined, FolderOpenOutlined } from '@ant-design/icons'
 import { strings } from '@renderer/locales/zh'
 import { getApi } from '@renderer/services/ipc.service'
 import HudCard from '@renderer/components/common/HudCard'
@@ -31,6 +31,16 @@ export default function SettingsPanel() {
     }
   }
 
+  // 目录路径由主进程从设置里取，成功返回空串，失败返回系统给的原因
+  const openDownloadDir = async () => {
+    try {
+      const failure = await getApi().openDownloadFolder()
+      if (failure) message.error(`${strings.settings.openDirFailed}${failure}`)
+    } catch {
+      message.error(strings.settings.openDirFailed)
+    }
+  }
+
   return (
     <HudCard zh={strings.settings.tab} en={strings.latin.settings}>
       <div className="card-head" style={{ marginTop: 8 }}>
@@ -51,6 +61,9 @@ export default function SettingsPanel() {
         </Typography.Text>
         <Button size="small" icon={<FolderOpenOutlined />} onClick={() => void changeDownloadDir()}>
           {strings.settings.changeDir}
+        </Button>
+        <Button size="small" icon={<ExportOutlined />} onClick={() => void openDownloadDir()}>
+          {strings.settings.openDir}
         </Button>
       </div>
       <Typography.Paragraph type="secondary" style={{ fontSize: 12, marginTop: 4 }}>

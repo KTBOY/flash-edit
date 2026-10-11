@@ -17,6 +17,7 @@ import CheatListPanel from '@renderer/components/cheat/CheatListPanel'
 import SettingsPanel from '@renderer/components/settings/SettingsPanel'
 import GameLibraryPanel from '@renderer/components/library/GameLibraryPanel'
 import DownloadPanel from '@renderer/components/download/DownloadPanel'
+import SkillPanel from '@renderer/components/skill/SkillPanel'
 import ExportExeModal from '@renderer/components/exe/ExportExeModal'
 import ProfileAutoSaver from './ProfileAutoSaver'
 import WindowControls from './WindowControls'
@@ -89,8 +90,8 @@ function LayoutHeader() {
   )
 }
 
-/** 右侧功能面板：游戏库 / 网络下载 / 数值扫描 / 修改列表 / 设置 */
-type PanelTabKey = 'library' | 'download' | 'scan' | 'cheat' | 'settings'
+/** 右侧功能面板：游戏库 / 网络下载 / 本地 Skill / 数值扫描 / 修改列表 / 设置 */
+type PanelTabKey = 'library' | 'download' | 'skill' | 'scan' | 'cheat' | 'settings'
 
 /**
  * 数值修改功能（数值扫描 + 修改列表）总开关。
@@ -105,6 +106,7 @@ function ToolPanel() {
   const all: { key: PanelTabKey; label: string; children: ReactNode }[] = [
     { key: 'library', label: strings.library.tab, children: <GameLibraryPanel /> },
     { key: 'download', label: strings.download.tab, children: <DownloadPanel /> },
+    { key: 'skill', label: strings.skill.tab, children: <SkillPanel /> },
     { key: 'scan', label: strings.scan.tab, children: <ScanPanel /> },
     { key: 'cheat', label: strings.cheat.tab, children: <CheatListPanel /> },
     { key: 'settings', label: strings.settings.tab, children: <SettingsPanel /> }

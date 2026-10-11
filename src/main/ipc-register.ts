@@ -1,6 +1,6 @@
 import { app, dialog, ipcMain, shell } from 'electron'
 import type { BrowserWindow } from 'electron'
-import { access, unlink, writeFile } from 'node:fs/promises'
+import { access, mkdir, unlink, writeFile } from 'node:fs/promises'
 import type { CheatProfile, GamesDeleteResult, GameRecord, SwfPatchSpec } from '@shared/types'
 import { IPC } from '@shared/ipc'
 import { isInsideDir } from './infra/paths'
@@ -13,11 +13,14 @@ import {
   isWindowsExecutable,
   readBundledProjector
 } from './services/exe-pack.service'
-import { OldswfDownloadManager } from './services/oldswf/oldswf-download.service'
+import { DownloadManager } from './services/download/download-manager'
+import { gameboxProvider } from './services/gamebox/gamebox-provider'
+import { oldswfProvider } from './services/oldswf/oldswf-provider'
 import { unpackSwfFromExeFile } from './services/exe-unpack.service'
 import { GameService } from './services/game.service'
 import { LibraryWatcher } from './services/library-watcher.service'
 import { ProfileService } from './services/profile.service'
+import { SkillService } from './services/skill.service'
 import { SettingsService } from './services/settings.service'
 
 export interface MainContext {
@@ -40,6 +43,7 @@ export function registerIpcHandlers(context: MainContext): () => void {
   const games = new GameService(app.getPath('userData'))
   const profiles = new ProfileService(app.getPath('userData'))
   const settings = new SettingsService(app.getPath('userData'))
+  const skills = new SkillService()
   const win = () => context.getMainWindow()
 
   // 下载目录文件监听：外部增删/移动游戏文件后推送刷新事件，
@@ -52,12 +56,13 @@ export function registerIpcHandlers(context: MainContext): () => void {
   })
   libraryWatcher.start(settings.downloadDir())
 
-  // oldswf 下载：多任务队列，保存目录由设置驱动（未设置时回退 userData/games），
+  // 网络游戏下载：多站点来源共用一个队列，保存目录由设置驱动（未设置时回退 userData/games），
   // 落盘成功即刻登记游戏库，任务状态与进度实时推送给渲染层
-  const oldswfDownloads = new OldswfDownloadManager(
+  const downloads = new DownloadManager(
+    [oldswfProvider, gameboxProvider],
     () => settings.downloadDir(),
     (task) => {
-      win()?.webContents.send(IPC.DOWNLOAD_OLDSWF_TASK, task)
+      win()?.webContents.send(IPC.DOWNLOAD_SWF_TASK, task)
     },
     (result, hash) => {
       games.upsert({
@@ -195,23 +200,32 @@ export function registerIpcHandlers(context: MainContext): () => void {
     }
   )
 
-  // oldswf 游戏下载：提交 / 取消 / 列表 / 清除已结束 / 任务事件 / 定位文件
-  ipcMain.handle(IPC.DOWNLOAD_OLDSWF, (_event, input: string) =>
-    oldswfDownloads.start(String(input ?? ''))
+  // 网络游戏下载：提交（按来源）/ 取消 / 列表 / 从任务表移除 / 定位文件
+  ipcMain.handle(IPC.DOWNLOAD_SWF, (_event, source: unknown, input: unknown) => {
+    if (source !== 'oldswf' && source !== 'gamebox') {
+      throw new Error(`不支持的下载来源：${String(source)}`)
+    }
+    return downloads.start(source, String(input ?? ''))
+  })
+  ipcMain.handle(IPC.DOWNLOAD_SWF_CANCEL, (_event, taskId: string) =>
+    typeof taskId === 'string' ? downloads.cancel(taskId) : false
   )
-  ipcMain.handle(IPC.DOWNLOAD_OLDSWF_CANCEL, (_event, gameId: string) =>
-    typeof gameId === 'string' ? oldswfDownloads.cancel(gameId) : false
-  )
-  ipcMain.handle(IPC.DOWNLOAD_OLDSWF_LIST, () => oldswfDownloads.list())
-  ipcMain.handle(IPC.DOWNLOAD_OLDSWF_REMOVE, (_event, gameIds: unknown) => {
-    if (!Array.isArray(gameIds)) return
-    oldswfDownloads.remove(gameIds.filter((id): id is string => typeof id === 'string'))
+  ipcMain.handle(IPC.DOWNLOAD_SWF_LIST, () => downloads.list())
+  ipcMain.handle(IPC.DOWNLOAD_SWF_REMOVE, (_event, taskIds: unknown) => {
+    if (!Array.isArray(taskIds)) return
+    downloads.remove(taskIds.filter((id): id is string => typeof id === 'string'))
   })
   ipcMain.on(IPC.DOWNLOAD_SHOW_FILE, (_event, path: string) => {
     if (typeof path === 'string' && path) shell.showItemInFolder(path)
   })
 
-  // 应用设置：读取生效下载目录 / 弹出目录选择框修改下载保存位置
+  // 本地 Skill：扫描 SKILL.md 列表 / 读取单个正文（主进程限定在扫描根内）
+  ipcMain.handle(IPC.SKILL_LIST, () => skills.list())
+  ipcMain.handle(IPC.SKILL_READ, (_event, path: unknown) =>
+    typeof path === 'string' ? skills.read(path) : null
+  )
+
+  // 应用设置：读取生效下载目录 / 弹出目录选择框修改下载保存位置 / 打开下载目录
   ipcMain.handle(IPC.SETTINGS_GET, () => settings.get())
   ipcMain.handle(IPC.SETTINGS_PICK_DIR, async () => {
     const dir = await pickDirectory(context.getMainWindow(), '选择游戏下载保存目录')
@@ -220,6 +234,23 @@ export function registerIpcHandlers(context: MainContext): () => void {
     libraryWatcher.start(next.downloadDir)
     logger.info('settings', `下载保存目录已修改：${dir}`)
     return next
+  })
+
+  // 在资源管理器中打开生效的下载目录：路径只取自主进程设置，不接受渲染层传入。
+  // 目录尚未建出来（首次下载才会创建，或被用户手动删掉）时先建再打开，避免按钮报错
+  ipcMain.handle(IPC.SETTINGS_OPEN_DIR, async () => {
+    const dir = settings.downloadDir()
+    try {
+      await mkdir(dir, { recursive: true })
+    } catch (error) {
+      logger.warn(
+        'settings',
+        `创建下载目录失败 ${dir}：${error instanceof Error ? error.message : String(error)}`
+      )
+    }
+    const failure = await shell.openPath(dir)
+    if (failure) logger.warn('settings', `打开下载目录失败 ${dir}：${failure}`)
+    return failure
   })
 
   // EXE 还原：选 projector 封装的 EXE，按尾部页脚提取附加 SWF 并另存

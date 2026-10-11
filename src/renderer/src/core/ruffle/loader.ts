@@ -61,11 +61,18 @@ export function ensureRuffleLoaded(): Promise<void> {
   return loadPromise
 }
 
-/** 在容器中创建播放器元素 */
-export async function createRufflePlayer(container: HTMLElement): Promise<RufflePlayerElement> {
+/**
+ * 在容器中创建播放器元素。
+ *
+ * baseUrl 必须是**目录** URL：Ruffle 解析 SWF 内部的相对请求时用的是页面 baseURI
+ * （dev 下就是 localhost:5173，生产下是 app 自己的目录），不显式指定就拿不到游戏同目录的
+ * 关卡/配置文件。多文件游戏的 shell.xml、map1b.swf 全靠它。
+ */
+export async function createRufflePlayer(container: HTMLElement, baseUrl?: string): Promise<RufflePlayerElement> {
   await ensureRuffleLoaded()
   const api = window.RufflePlayer
   if (!api?.newest) throw new Error('Ruffle 运行时不可用')
+  if (api.config) api.config.base = baseUrl ?? undefined
   const player = api.newest().createPlayer()
   container.appendChild(player)
   return player

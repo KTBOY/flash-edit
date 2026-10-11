@@ -166,24 +166,33 @@ export interface GamesDeleteResult {
   failedFiles: string[]
 }
 
-/** 下载阶段：starting 启动浏览器 / downloading 监听分片 / extracting 页面缓存提取 / saving 落盘 */
-export type OldswfDownloadPhase = 'starting' | 'downloading' | 'extracting' | 'saving'
+/**
+ * 下载来源站点。每个来源对应主进程一个 provider（输入格式、取源方式、反爬手段各不同），
+ * 共用同一套队列、进度与落盘逻辑。新增站点只需实现 provider 并加入注册表。
+ */
+export type DownloadSource = 'oldswf' | 'gamebox'
+
+/** 下载阶段：starting 取源准备 / downloading 下载资源 / extracting 兜底提取 / saving 落盘 */
+export type DownloadPhase = 'starting' | 'downloading' | 'extracting' | 'saving'
 
 /** 下载任务状态（queued 表示等待并发额度） */
-export type OldswfTaskStatus = 'queued' | 'running' | 'succeeded' | 'failed' | 'canceled'
+export type DownloadTaskStatus = 'queued' | 'running' | 'succeeded' | 'failed' | 'canceled'
 
 /**
- * oldswf 下载任务快照（主进程 → 渲染进程）。
+ * 下载任务快照（主进程 → 渲染进程）。
  * 状态与进度合一：主进程是任务列表唯一事实来源，渲染层只做展示与操作。
  */
-export interface OldswfDownloadTask {
-  /** 游戏 ID，同时作为任务标识 */
+export interface DownloadTask {
+  /** 任务标识，形如 `oldswf:109087`——不同站点的游戏 ID 会重号，必须带来源 */
+  id: string
+  source: DownloadSource
+  /** 站点内的游戏 ID */
   gameId: string
   /** 用户原始输入（游戏页地址或 ID），重试时复用 */
   input: string
-  status: OldswfTaskStatus
+  status: DownloadTaskStatus
   /** 当前（或最后）阶段；queued 时为 null */
-  phase: OldswfDownloadPhase | null
+  phase: DownloadPhase | null
   /** 已接收字节数（去重分片求和） */
   receivedBytes: number
   /** 总字节数；0 表示尚不可知 */
@@ -191,7 +200,7 @@ export interface OldswfDownloadTask {
   /** 已捕获分片数 */
   chunkCount: number
   /** 成功后的落盘信息 */
-  result: OldswfDownloadResult | null
+  result: DownloadResult | null
   /** 失败原因（status 为 failed 时存在） */
   error: string | null
   /** 任务创建时间戳，用于列表排序 */
@@ -204,12 +213,13 @@ export interface AppSettings {
   downloadDir: string
 }
 
-/** oldswf 下载结果 */
-export interface OldswfDownloadResult {
+/** 下载结果（站点无关；name/path 由主进程按「清洗后标题_游戏ID.swf」命名） */
+export interface DownloadResult {
+  source: DownloadSource
   gameId: string
   /** 保存的文件名（含扩展名），与游戏库记录 name 一致 */
   name: string
-  /** 本地文件绝对路径（userData/games 目录下） */
+  /** 下载目录下的绝对路径 */
   path: string
   sizeBytes: number
 }
@@ -226,6 +236,33 @@ export interface AppInfo {
   version: string
   electron: string
   platform: string
+}
+
+/** 当前项目里的 Agent Skill 条目（主进程扫描 SKILL.md 得到） */
+export interface SkillItem {
+  /** SKILL.md 绝对路径，同时作为条目唯一键 */
+  path: string
+  /** skill 目录绝对路径，「复制路径」给 AI 会话引用的就是它 */
+  dir: string
+  /** frontmatter 的 name，缺失时退回目录名 */
+  name: string
+  /** frontmatter 的 description，缺失时退回正文首段 */
+  description: string
+  /** 命中该条目的扫描根（仓库里 .agents 与 .qoder 两处都算项目级） */
+  root: string
+  sizeBytes: number
+  /** 文件修改时间（epoch 毫秒） */
+  updatedAt: number
+  /** 同名 skill 在项目内两个扫描根里都存在，加载优先级不由本应用裁决 */
+  duplicated: boolean
+}
+
+/** SKILL.md 正文读取结果 */
+export interface SkillMarkdownResult {
+  /** 去掉 frontmatter 后的正文 */
+  body: string
+  /** 文件超出读取上限，正文被截断 */
+  truncated: boolean
 }
 
 /** 值类型元数据（UI 与引擎共用） */

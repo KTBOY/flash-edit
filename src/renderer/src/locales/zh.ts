@@ -9,6 +9,7 @@ export const strings = {
     stateOn: 'RUNTIME BRIDGED',
     stateIdle: 'STANDBY',
     tabDownload: 'DOWNLOADS',
+    tabSkill: 'LOCAL SKILLS',
     scan: 'VALUE SCAN',
     cheat: 'CHEAT TABLE',
     settings: 'CONFIG',
@@ -117,12 +118,11 @@ export const strings = {
   },
   download: {
     tab: '网络下载',
-    hint: '粘贴 oldswf 游戏页地址或数字 ID，可连续提交多个任务并行下载（最多 3 个同时跑，其余排队）。下载中可随时切走，进度不会丢；删除仅清列表记录，不影响游戏库与已下载文件，删除进行中的任务会先取消它。',
-    inputPlaceholder: 'https://oldswf.com/game/109087 或 109087',
+    sourceTitle: '下载站点',
+    hint: '可连续提交多个任务并行下载（最多 3 个同时跑，其余排队）。下载中可随时切走，进度不会丢；删除仅清列表记录，不影响游戏库与已下载文件，删除进行中的任务会先取消它。',
+    empty: '该站点暂无下载任务',
     add: '加入队列',
-    invalid: '请输入 oldswf.com/game/<数字ID> 或纯数字游戏 ID',
     added: '已加入下载队列',
-    empty: '暂无下载任务',
     selectAll: '全选',
     deleteSelected: '删除选中',
     cancel: '取消',
@@ -131,6 +131,19 @@ export const strings = {
     reveal: '定位文件',
     chunks: '分片',
     totalUnknown: '大小未知',
+    // 每个站点是一套独立入口：各自的输入框、格式提示与任务列表，不共用输入框
+    sources: {
+      oldswf: {
+        label: 'oldswf.com',
+        placeholder: 'https://oldswf.com/game/109087 或 109087',
+        note: '该站对网页做浏览器指纹校验：本工具驱动本机 Edge/Chrome 读出资源地址，再直连下载整份 SWF。'
+      },
+      gamebox: {
+        label: 'gamebox.tw',
+        placeholder: 'https://www.gamebox.tw/game/8067 或 8067',
+        note: '该站把游戏放在对象存储上并校验来源页：本工具带游戏页地址作 Referer 直接全量下载，无需启动浏览器。'
+      }
+    },
     status: {
       queued: '排队中',
       running: '下载中',
@@ -139,7 +152,7 @@ export const strings = {
       canceled: '已取消'
     },
     phase: {
-      starting: '正在启动本机浏览器…',
+      starting: '正在解析游戏资源地址…',
       downloading: '正在下载游戏资源',
       extracting: '分片不完整，正在从页面缓存提取…',
       saving: '正在保存…'
@@ -151,6 +164,8 @@ export const strings = {
     downloadDirLabel: '游戏保存位置',
     downloadDirHint: '网络下载的游戏会保存到该目录，修改后仅影响之后的下载',
     changeDir: '修改位置',
+    openDir: '打开位置',
+    openDirFailed: '无法打开该位置：',
     aboutTitle: '关于',
     aboutDevLabel: '开发',
     aboutDev: '舒克开发',
@@ -220,6 +235,32 @@ export const strings = {
     doneRecords: '已移除 {n} 条记录',
     doneFiles: '，删除 {n} 个文件',
     noteKept: '；{n} 项文件在下载目录外，已保留',
-    noteFailed: '；{n} 个文件删除失败（可能被占用）'
+    noteFailed: '；{n} 个文件删除失败（可能被占用）',
+    copyPath: '复制文件路径',
+    copyPathDone: '路径已复制',
+    copyPathFailed: '复制失败，请手动选中记录'
+  },
+  skill: {
+    tab: 'Skill',
+    title: '项目 Skill',
+    hint: '扫出当前仓库 .agents\\skills 与 .qoder\\skills 里的 SKILL.md。改动后点刷新重扫。',
+    searchPlaceholder: '搜索名称或描述',
+    refresh: '重新扫描',
+    refreshing: '正在扫描…',
+    scanFailed: '扫描失败，请稍后重试',
+    empty: '这个项目还没有 skill',
+    noMatch: '没有匹配的 skill',
+    detail: '查看正文',
+    detailTitle: 'SKILL.md',
+    pathLabel: '目录',
+    copyPath: '复制路径',
+    copyPathDone: '目录路径已复制',
+    copyFailed: '复制失败，请在输入框里手动选中复制',
+    reveal: '在文件夹中显示',
+    duplicate: '同名 skill 存在于多个来源，加载优先级不由本应用决定',
+    readFailed: '读取正文失败',
+    truncated: '正文过长，已截断显示',
+    emptyBody: '（该文件没有正文）',
+    close: '关闭'
   }
 } as const

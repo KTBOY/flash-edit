@@ -757,6 +757,122 @@ input[type='range'].hud-slider:active::-webkit-slider-thumb {
   margin-top: 2px;
 }
 
+/* ---------- 本地 Skill 列表 ---------- */
+
+.skill-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.skill-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+  max-height: calc(100vh - 330px);
+}
+
+.skill-item {
+  padding: 8px 10px;
+  border: 1px solid var(--hair);
+  border-left: 2px solid rgba(201, 172, 103, 0.45);
+  background: rgba(0, 0, 0, 0.22);
+}
+
+.skill-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.skill-name {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  height: auto;
+  /* antd 按钮内部是居中 flex，不显式左对齐会让 skill 名悬在行中间 */
+  justify-content: flex-start;
+  text-align: left;
+}
+
+.skill-name .tt {
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.skill-warn {
+  flex: none;
+  color: var(--gold-bright);
+  font-size: 12px;
+}
+
+.skill-desc {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: 11px;
+  line-height: 1.55;
+  color: var(--cream-dim);
+}
+
+.skill-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.skill-meta-info {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  color: rgba(250, 250, 233, 0.32);
+}
+
+.skill-actions {
+  display: flex;
+  flex: none;
+  gap: 2px;
+}
+
+.skill-path-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.skill-path-row .ant-input {
+  font-size: 11px;
+}
+
+/* 「目录」两字要被挤成竖排就很难看，标签固定不缩 */
+.skill-path-row > .ant-typography {
+  flex: none;
+  white-space: nowrap;
+}
+
+.skill-body {
+  max-height: 46vh;
+  margin: 0;
+  padding: 10px 12px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--cream);
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--hair);
+}
+
 /* ---------- 滚动区 ---------- */
 
 .scroll-panel {

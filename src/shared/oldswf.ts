@@ -76,8 +76,3 @@ export function parseFilesXml(xml: string): string[] {
   }
   return items;
 }
-
-/** 文件名清洗：非法字符替换为下划线并限长 */
-export function sanitizeFileName(name: string): string {
-  return name.replace(/[\\/:*?"<>|\s]+/g, '_').slice(0, 80);
-}

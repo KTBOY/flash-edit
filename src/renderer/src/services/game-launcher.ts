@@ -1,5 +1,5 @@
 import type { GameRecord } from '@shared/types'
-import { buildSwfFileUrl } from '@shared/protocol'
+import { buildSwfFileDirUrl, buildSwfFileUrl } from '@shared/protocol'
 import { timeScaler } from '@renderer/core/runtime'
 import { sha256Hex, sha256HexOfString } from '@renderer/core/hash'
 import { getApi } from './ipc.service'
@@ -125,7 +125,13 @@ export class GameLauncher {
     try {
       const hash = await sha256Hex(bytes)
       loadedSwfSource = { bytes, name }
-      await this.controller.load({ name, data: bytes })
+      // 有本地路径时按 URL 载入，并把 base 指到游戏自己的目录：
+      // 多文件游戏（外壳 + 同目录关卡/配置）的相对请求只有这样才能命中。
+      await this.controller.load(
+        path
+          ? { name, url: buildSwfFileUrl(path), base: buildSwfFileDirUrl(path) }
+          : { name, data: bytes }
+      )
       await this.finalize({ hash, name, size, source, path })
     } catch (error) {
       this.fail('加载 SWF 失败', error)
