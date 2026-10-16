@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>Ruffle SWF Test Harness</title>
+<style>
+  html, body { margin: 0; padding: 0; background: #101317; height: 100%; }
+  #container { width: 640px; height: 480px; margin: 0 auto; }
+  /* 画布水平居中：640 宽容器在 700 宽 viewport 中 => 左偏移 30px */
+</style>
+</head>
+<body>
+<div id="container"></div>
+
+<!-- Ruffle 运行时：从本目录的 ruffle/ 子目录加载（本项目 src/renderer/public/ruffle 复制而来） -->
+<script src="ruffle/ruffle.js"></script>
+<script>
+  // 关键配置：自动播放、隐藏"点击激活"遮罩、letterbox、关掉启动画面
+  window.RufflePlayer = window.RufflePlayer || {};
+  window.RufflePlayer.config = {
+    autoplay: "on",
+    unmuteOverlay: "hidden",
+    letterbox: "on",
+    splashScreen: false,
+    allowScriptAccess: true,
+    scale: "noScale",
+    quality: "high",
+    warnOnUnsupportedContent: false,
+    logLevel: "error"
+  };
+
+  // 记录 Ruffle 控制台输出，便于 Playwright 采集
+  window.__ruffleLogs = [];
+  (function () {
+    const push = (lvl) => (...a) => {
+      try { window.__ruffleLogs.push(lvl + ": " + a.map(String).join(" ").slice(0, 500)); } catch (e) {}
+    };
+    const origLog = console.log, origErr = console.error, origWarn = console.warn;
+    console.log = (...a) => { push("log")(...a); origLog(...a); };
+    console.error = (...a) => { push("error")(...a); origErr(...a); };
+    console.warn = (...a) => { push("warn")(...a); origWarn(...a); };
+  })();
+
+  window.addEventListener("load", () => {
+    const player = window.RufflePlayer.newest().createPlayer();
+    document.getElementById("container").appendChild(player);
+    // 默认加载同目录的 game.swf；也可用 ?swf=xxx.swf 指定
+    const swf = new URLSearchParams(location.search).get("swf") || "game.swf";
+    player.ruffle().load(swf);
+    window.__ruffleReady = true;
+  });
+</script>
+</body>
+</html>

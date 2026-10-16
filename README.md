@@ -63,6 +63,18 @@ npm run dist     # 一步到位：清理旧产物 → electron-vite build → el
 | [docs/FEASIBILITY.md](docs/FEASIBILITY.md)   | 可行性分析：四条技术路线对比、逐项可行性、已知限制           |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | 架构：补丁时序、内存 detach 防护、引擎可测试性、类型安全 IPC |
 | [docs/USAGE.md](docs/USAGE.md)               | 操作教程与常见问题                                           |
+| [docs/FLASH-REVERSING.md](docs/FLASH-REVERSING.md) | Flash 游戏逆向与改造：解包/补丁/存档/Ruffle 实测方法论（配套 `flash-game-patcher` skill） |
+
+## 项目 Skill
+
+`.agents/skills/` 下的 Skill 会显示在侧边栏「项目 Skill」面板（可搜索、看正文、复制目录路径）：
+
+| Skill | 用途 |
+| --- | --- |
+| [`flash-swf-mod`](.agents/skills/flash-swf-mod/SKILL.md) | 等长字节改数值（无敌版/无限金币/去广告/汉化可行性） |
+| [`flash-game-patcher`](.agents/skills/flash-game-patcher/SKILL.md) | 解包嵌套包装、加存档、修失效按钮、注入代码、Ruffle 实测（含可执行脚本） |
+| [`resonance-hud`](.agents/skills/resonance-hud/SKILL.md) | 深色金调游戏 HUD 设计语言（本应用界面风格来源） |
+
 
 ## 技术栈
 
