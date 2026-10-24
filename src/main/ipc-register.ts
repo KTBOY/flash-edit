@@ -5,7 +5,8 @@ import type { CheatProfile, GamesDeleteResult, GameRecord, SwfPatchSpec } from '
 import { IPC } from '@shared/ipc'
 import { isInsideDir } from './infra/paths'
 import { logger } from './infra/logger'
-import { pickSwfFile, pickSwfSavePath, pickDirectory } from './services/dialog.service'
+import { pickSwfFile, pickSwfSavePath, pickDirectory, pickExeFile } from './services/dialog.service'
+import { createShortcutBat } from './services/toolbox/shortcut-tool.service'
 import { analyzeSwfPatch, patchSwf } from './services/swf-patch.service'
 import {
   buildProjectorExe,
@@ -83,6 +84,18 @@ export function registerIpcHandlers(context: MainContext): () => void {
   }))
 
   ipcMain.handle(IPC.DIALOG_PICK_SWF, () => pickSwfFile(context.getMainWindow()))
+
+  // 工具箱：选 EXE / 选目录 / 生成"双击创建桌面快捷方式"的 bat。
+  // 入参严格校验类型：非法入参直接抛错，由渲染层 toast 呈现
+  ipcMain.handle(IPC.DIALOG_PICK_EXE, () => pickExeFile(context.getMainWindow()))
+  ipcMain.handle(IPC.DIALOG_PICK_DIR, (_event, title: unknown) =>
+    pickDirectory(context.getMainWindow(), typeof title === 'string' && title ? title : '选择目录')
+  )
+  ipcMain.handle(IPC.TOOLBOX_SHORTCUT_BAT, (_event, exePath: unknown, outputDir: unknown) => {
+    if (typeof exePath !== 'string' || !exePath) throw new Error('未选择启动程序 EXE')
+    if (typeof outputDir !== 'string' || !outputDir) throw new Error('未选择 bat 输出目录')
+    return createShortcutBat({ exePath, outputDir })
+  })
 
   // 游戏库列表：按记录里的 path 实时核对磁盘文件，已不存在的标注 missing，
   // 渲染层据此显示"文件丢失"并禁用打开（记录本身保留，删除与否由用户决定）

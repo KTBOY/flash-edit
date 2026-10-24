@@ -15,7 +15,11 @@ import type { MemoryProvider, MemoryInfo } from '@renderer/core/scan/engine'
 export interface TrackedMemoryRecord {
   readonly id: number
   readonly label: string
-  readonly memory: WebAssembly.Memory
+  /**
+   * 弱引用。记录数组绝不能强持有 Memory：播放器销毁后其 WASM 线性内存
+   * （大游戏可达数百 MB）必须能够被 GC 回收，否则切换/重载游戏会持续累积。
+   */
+  readonly ref: WeakRef<WebAssembly.Memory>
 }
 
 export interface WasmHost {
@@ -27,21 +31,42 @@ export class WasmMemoryTracker {
   private known = new WeakSet<WebAssembly.Memory>()
   private installed = false
   private nextId = 0
+  /**
+   * Memory 被 GC 回收后自动摘除对应记录。
+   * records 只持弱引用，不会反过来阻止回收——回收 → 摘除形成闭环。
+   */
+  private readonly registry = new FinalizationRegistry((id: number) => {
+    this.records = this.records.filter((record) => record.id !== id)
+  })
 
   get count(): number {
-    return this.records.length
+    return this.aliveRecords().length
   }
 
   get totalBytes(): number {
-    return this.records.reduce((sum, r) => sum + this.safeByteLength(r.memory), 0)
+    return this.aliveRecords().reduce((sum, record) => {
+      const memory = record.ref.deref()
+      return memory ? sum + this.safeByteLength(memory) : sum
+    }, 0)
+  }
+
+  /** 立即摘除已被回收的内存记录，返回清理数量；仍在使用的记录不受影响 */
+  prune(): number {
+    const before = this.records.length
+    this.records = this.records.filter((record) => record.ref.deref() !== undefined)
+    return before - this.records.length
   }
 
   list(): readonly TrackedMemoryRecord[] {
-    return this.records
+    return this.aliveRecords()
   }
 
   findById(id: number): TrackedMemoryRecord | null {
-    return this.records.find((r) => r.id === id) ?? null
+    return this.aliveRecords().find((record) => record.id === id) ?? null
+  }
+
+  private aliveRecords(): TrackedMemoryRecord[] {
+    return this.records.filter((record) => record.ref.deref() !== undefined)
   }
 
   /**
@@ -99,8 +124,10 @@ export class WasmMemoryTracker {
   private register(memory: WebAssembly.Memory): void {
     if (this.known.has(memory)) return
     this.known.add(memory)
-    this.records.push({ id: this.nextId, label: `memory#${this.nextId}`, memory })
+    const id = this.nextId
+    this.records.push({ id, label: `memory#${id}`, ref: new WeakRef(memory) })
     this.nextId += 1
+    this.registry.register(memory, id)
   }
 
   private safeByteLength(memory: WebAssembly.Memory): number {
@@ -167,8 +194,10 @@ function wrapAsyncMember<
 /** 基于追踪器构建扫描引擎所需的内存源。每次访问都读取最新的 buffer（防 detach） */
 export function createMemoryProvider(tracker: WasmMemoryTracker): MemoryProvider {
   const byteLength = (record: TrackedMemoryRecord): number => {
+    const memory = record.ref.deref()
+    if (!memory) return 0
     try {
-      return record.memory.buffer.byteLength
+      return memory.buffer.byteLength
     } catch {
       return 0
     }
@@ -180,8 +209,10 @@ export function createMemoryProvider(tracker: WasmMemoryTracker): MemoryProvider
     getBuffer(memId: number): ArrayBuffer | null {
       const record = tracker.findById(memId)
       if (!record) return null
+      const memory = record.ref.deref()
+      if (!memory) return null
       try {
-        const buffer = record.memory.buffer
+        const buffer = memory.buffer
         return buffer && buffer.byteLength > 0 ? buffer : null
       } catch {
         return null

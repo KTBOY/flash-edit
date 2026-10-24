@@ -1,4 +1,4 @@
-import { chromium, type Browser, type Page } from 'playwright-core';
+import type { Browser, Page } from 'playwright-core';
 import type { SwfFetchContext, SwfFetchResult, SwfSourceProvider } from '../download/provider';
 import { DownloadCancelledError } from '../download/provider';
 import {
@@ -49,6 +49,9 @@ function firstLine(error: unknown): string {
 
 /** 启动系统真实浏览器（优先 Edge，其次 Chrome，最后回退 playwright 自带内核） */
 async function launchRealBrowser(): Promise<Browser> {
+  // 动态加载：playwright-core 体积大（require 一次 ~370ms / ~70MB），
+  // 绝大多数会话用不到下载功能，不能让它拖慢每次应用启动
+  const { chromium } = await import('playwright-core');
   const failures: string[] = [];
   for (const channel of ['msedge', 'chrome']) {
     try {

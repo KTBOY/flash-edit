@@ -1,5 +1,6 @@
 import type { RufflePlayerElement, RufflePlayerMetadata } from '@renderer/types/ruffle'
 import { createRufflePlayer } from './loader'
+import { memoryTracker } from '@renderer/core/runtime'
 
 /**
  * 播放器生命周期控制器：
@@ -69,6 +70,9 @@ export class PlayerController {
 
     const seq = ++this.loadSeq
     this.destroyPlayer()
+    // 旧播放器已移除，立即摘除其中已被回收的 WASM 内存记录，
+    // 避免上一局的大块线性内存一直挂在追踪列表里
+    memoryTracker.prune()
     try {
       const player = await createRufflePlayer(container, source.base)
       if (seq !== this.loadSeq || this.container !== container) {
@@ -144,6 +148,7 @@ export class PlayerController {
   destroy(): void {
     this.loadSeq += 1
     this.destroyPlayer()
+    memoryTracker.prune()
     this.source = null
     this.events = {}
   }

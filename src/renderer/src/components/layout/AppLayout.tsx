@@ -1,5 +1,5 @@
-import { useEffect, useState, type ReactNode } from 'react'
-import { Button, Layout, Space, Tabs } from 'antd'
+import { lazy, Suspense, useEffect, useState, type ReactNode } from 'react'
+import { Button, Layout, Space, Spin, Tabs } from 'antd'
 import {
   ExportOutlined,
   FolderOpenOutlined,
@@ -12,18 +12,41 @@ import { useDownloadStore } from '@renderer/store/useDownloadStore'
 import { SIDER_WIDTH, useUiStore } from '@renderer/store/useUiStore'
 import { AppServicesProvider, useAppServices } from '@renderer/services/app-services'
 import PlayerPanel from '@renderer/components/player/PlayerPanel'
-import ScanPanel from '@renderer/components/scan/ScanPanel'
-import CheatListPanel from '@renderer/components/cheat/CheatListPanel'
-import SettingsPanel from '@renderer/components/settings/SettingsPanel'
 import GameLibraryPanel from '@renderer/components/library/GameLibraryPanel'
-import DownloadPanel from '@renderer/components/download/DownloadPanel'
-import SkillPanel from '@renderer/components/skill/SkillPanel'
-import ExportExeModal from '@renderer/components/exe/ExportExeModal'
+import ToolboxPanel from '@renderer/components/toolbox/ToolboxPanel'
 import ProfileAutoSaver from './ProfileAutoSaver'
 import WindowControls from './WindowControls'
 import StatusBar from './StatusBar'
 
+// 非首屏面板全部懒加载：启动只解析首屏需要的 antd 子集，
+// 首次切到对应 Tab 时才加载对应 chunk（切换瞬间几乎无感，本地加载）
+const DownloadPanel = lazy(() => import('@renderer/components/download/DownloadPanel'))
+const SkillPanel = lazy(() => import('@renderer/components/skill/SkillPanel'))
+const ScanPanel = lazy(() => import('@renderer/components/scan/ScanPanel'))
+const CheatListPanel = lazy(() => import('@renderer/components/cheat/CheatListPanel'))
+const SettingsPanel = lazy(() => import('@renderer/components/settings/SettingsPanel'))
+const ExportExeModal = lazy(() => import('@renderer/components/exe/ExportExeModal'))
+
 const { Header, Content } = Layout
+
+/** 懒加载面板的占位：本地 chunk 加载是毫秒级，Spin 只是兜底 */
+function PanelSuspense({ children }: { children: ReactNode }) {
+  return <Suspense fallback={<div style={{ padding: 32, textAlign: 'center' }}><Spin /></div>}>{children}</Suspense>
+}
+
+/** 打包 EXE 弹窗：首次打开才加载对应 chunk；之后保持挂载，交给 Modal 自己管理开合动画 */
+function ExportExeModalWrapper({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const [everOpened, setEverOpened] = useState(false)
+  useEffect(() => {
+    if (open) setEverOpened(true)
+  }, [open])
+  if (!everOpened) return null
+  return (
+    <Suspense fallback={null}>
+      <ExportExeModal open={open} onClose={onClose} />
+    </Suspense>
+  )
+}
 
 /** 顶部栏：菱形标记 + 中英双语标题堆叠 + 运行状态 + 本地载入入口 */
 function LayoutHeader() {
@@ -85,13 +108,13 @@ function LayoutHeader() {
         <WindowControls />
       </div>
 
-      <ExportExeModal open={exeModalOpen} onClose={() => setExeModalOpen(false)} />
+      <ExportExeModalWrapper open={exeModalOpen} onClose={() => setExeModalOpen(false)} />
     </Header>
   )
 }
 
-/** 右侧功能面板：游戏库 / 网络下载 / 本地 Skill / 数值扫描 / 修改列表 / 设置 */
-type PanelTabKey = 'library' | 'download' | 'skill' | 'scan' | 'cheat' | 'settings'
+/** 右侧功能面板：游戏库 / 网络下载 / 本地 Skill / 工具箱 / 数值扫描 / 修改列表 / 设置 */
+type PanelTabKey = 'library' | 'download' | 'skill' | 'toolbox' | 'scan' | 'cheat' | 'settings'
 
 /**
  * 数值修改功能（数值扫描 + 修改列表）总开关。
@@ -105,11 +128,12 @@ function ToolPanel() {
 
   const all: { key: PanelTabKey; label: string; children: ReactNode }[] = [
     { key: 'library', label: strings.library.tab, children: <GameLibraryPanel /> },
-    { key: 'download', label: strings.download.tab, children: <DownloadPanel /> },
-    { key: 'skill', label: strings.skill.tab, children: <SkillPanel /> },
-    { key: 'scan', label: strings.scan.tab, children: <ScanPanel /> },
-    { key: 'cheat', label: strings.cheat.tab, children: <CheatListPanel /> },
-    { key: 'settings', label: strings.settings.tab, children: <SettingsPanel /> }
+    { key: 'download', label: strings.download.tab, children: <PanelSuspense><DownloadPanel /></PanelSuspense> },
+    { key: 'skill', label: strings.skill.tab, children: <PanelSuspense><SkillPanel /></PanelSuspense> },
+    { key: 'toolbox', label: strings.toolbox.tab, children: <ToolboxPanel /> },
+    { key: 'scan', label: strings.scan.tab, children: <PanelSuspense><ScanPanel /></PanelSuspense> },
+    { key: 'cheat', label: strings.cheat.tab, children: <PanelSuspense><CheatListPanel /></PanelSuspense> },
+    { key: 'settings', label: strings.settings.tab, children: <PanelSuspense><SettingsPanel /></PanelSuspense> }
   ]
   const items = SHOW_CHEAT_FEATURES
     ? all

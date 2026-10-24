@@ -262,5 +262,25 @@ export const strings = {
     truncated: '正文过长，已截断显示',
     emptyBody: '（该文件没有正文）',
     close: '关闭'
+  },
+  toolbox: {
+    tab: '工具箱',
+    shortcutTitle: '创建桌面快捷方式（生成 bat）',
+    shortcutHint:
+      '选择一个启动程序 EXE 与输出目录，生成「点我就可以创建快捷方式.bat」。双击该 bat 就会在桌面创建指向 EXE 的快捷方式——适合把游戏文件夹发给别人后一键落快捷方式。bat 与 EXE 同目录生成时记录的是相对位置，整个文件夹移动或换电脑后依然有效；两者不同目录时只能记录当前电脑的绝对路径。',
+    pickExe: '选择启动程序 EXE',
+    pickDir: '选择 bat 输出目录',
+    pickDirTitle: '选择 bat 生成位置',
+    noneSelected: '未选择',
+    generate: '生成 bat',
+    confirmTitle: '生成快捷方式 bat',
+    confirmExe: '启动程序',
+    confirmBat: '生成位置',
+    confirmNote:
+      '同名 bat 已存在时会被覆盖；桌面快捷方式的名称将使用 EXE 文件名。bat 运行成功后会弹窗提示，并询问是否顺手打开游戏。',
+    done: 'bat 已生成，双击它即可创建桌面快捷方式（可随文件夹一起分发）',
+    doneAbsolute: 'bat 已生成。它记录的是本机绝对路径，仅在本机当前位置有效',
+    reveal: '打开所在目录',
+    securityNote: 'bat 内嵌一段 PowerShell 调用系统组件创建快捷方式，个别杀毒软件可能提示，属正常现象。'
   }
 } as const

@@ -231,6 +231,20 @@ export interface SwfPickResult {
   size: number
 }
 
+/** 工具箱：快捷方式 bat 的生成模式 */
+export type ShortcutBatMode =
+  /** bat 与目标 EXE 同目录：目标路径用 %~dp0 运行时展开，文件夹整体移动/分发后依然有效 */
+  | 'portable'
+  /** bat 与 EXE 分离：内嵌 EXE 绝对路径，仅在本机当前位置有效 */
+  | 'absolute'
+
+/** 工具箱：生成「双击创建桌面快捷方式」bat 的结果 */
+export interface ShortcutBatResult {
+  batPath: string
+  targetPath: string
+  mode: ShortcutBatMode
+}
+
 /** 应用信息 */
 export interface AppInfo {
   version: string

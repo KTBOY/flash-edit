@@ -15,11 +15,34 @@ import { useScanStore } from '@renderer/store/useScanStore'
  * → 游戏库记录 → 修改配置恢复（含速度）。
  */
 
-/** 当前会话加载的 SWF 源字节（供"写入 SWF"离线补丁使用；URL 来源为 null） */
-let loadedSwfSource: { bytes: Uint8Array; name: string } | null = null
+/**
+ * 当前会话加载的 SWF 源信息（供"写入 SWF"/导出 EXE 离线使用；URL 来源为 null）。
+ * 本地路径来源只记 path，字节按需重读磁盘——大 SWF（30MB+）不再全程钉在内存里；
+ * 拖拽来源拿不到路径，必须把 bytes 留在内存。
+ */
+export interface LoadedSwfSource {
+  name: string
+  bytes?: Uint8Array
+  path?: string
+}
 
-export function getLoadedSwfSource(): { bytes: Uint8Array; name: string } | null {
+let loadedSwfSource: LoadedSwfSource | null = null
+
+export function getLoadedSwfSource(): LoadedSwfSource | null {
   return loadedSwfSource
+}
+
+/** 取当前游戏的可离线处理字节：内存留有（拖拽来源）直接返回，本地路径来源按需重读 */
+export async function loadSwfSourceBytes(): Promise<{ name: string; bytes: Uint8Array } | null> {
+  const source = loadedSwfSource
+  if (!source) return null
+  if (source.bytes) return { name: source.name, bytes: source.bytes }
+  if (source.path) {
+    const response = await fetch(buildSwfFileUrl(source.path))
+    if (!response.ok) throw new Error(`本地文件读取失败（HTTP ${response.status}）`)
+    return { name: source.name, bytes: new Uint8Array(await response.arrayBuffer()) }
+  }
+  return null
 }
 
 export class GameLauncher {
@@ -124,7 +147,8 @@ export class GameLauncher {
     useGameStore.getState().beginLoad()
     try {
       const hash = await sha256Hex(bytes)
-      loadedSwfSource = { bytes, name }
+      // 本地路径来源字节可随时从磁盘重读，只记路径；拖拽来源必须留 bytes
+      loadedSwfSource = path ? { name, path } : { name, bytes }
       // 有本地路径时按 URL 载入，并把 base 指到游戏自己的目录：
       // 多文件游戏（外壳 + 同目录关卡/配置）的相对请求只有这样才能命中。
       await this.controller.load(

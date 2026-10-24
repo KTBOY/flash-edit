@@ -76,7 +76,32 @@ describe('WasmMemoryTracker', () => {
 
     await host.WebAssembly.instantiate(MEM_MODULE_BYTES)
     expect(tracker.count).toBe(1)
-    expect(tracker.list()[0].memory.buffer.byteLength).toBe(65536)
+    const memory = tracker.list()[0].ref.deref()
+    expect(memory?.buffer.byteLength).toBe(65536)
+  })
+
+  it('prune 不清理仍在使用的内存', () => {
+    const tracker = new WasmMemoryTracker()
+    const host = createIsolatedHost()
+    tracker.install(host)
+
+    const memory = new host.WebAssembly.Memory({ initial: 1 })
+    expect(tracker.prune()).toBe(0)
+    expect(tracker.count).toBe(1)
+    expect(memory).toBeDefined() // 保持强引用到断言结束
+  })
+
+  it('prune 后 id 不回退复用', () => {
+    const tracker = new WasmMemoryTracker()
+    const host = createIsolatedHost()
+    tracker.install(host)
+
+    const first = new host.WebAssembly.Memory({ initial: 1 })
+    const second = new host.WebAssembly.Memory({ initial: 1 })
+    tracker.prune()
+    expect(tracker.list().map((record) => record.id)).toEqual([0, 1])
+    expect(first).toBeDefined()
+    expect(second).toBeDefined()
   })
 
   it('未安装补丁时不捕获', () => {

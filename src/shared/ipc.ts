@@ -13,6 +13,7 @@ import type {
   SwfPatchReportItem,
   SwfPatchSpec,
   SwfPickResult,
+  ShortcutBatResult,
   SwfSaveResult
 } from './types'
 
@@ -22,6 +23,9 @@ import type {
 export const IPC = {
   APP_INFO: 'app:info',
   DIALOG_PICK_SWF: 'dialog:pick-swf',
+  DIALOG_PICK_EXE: 'dialog:pick-exe',
+  DIALOG_PICK_DIR: 'dialog:pick-dir',
+  TOOLBOX_SHORTCUT_BAT: 'toolbox:shortcut-bat',
   GAMES_LIST: 'games:list',
   GAMES_ADD: 'games:add',
   GAMES_DELETE: 'games:delete',
@@ -62,6 +66,15 @@ export interface IpcApi {
   getAppInfo(): Promise<AppInfo>
   /** 打开系统文件选择框选择 SWF，取消返回 null */
   pickSwfFile(): Promise<SwfPickResult | null>
+  /** 打开系统文件选择框选择 EXE（工具箱用），取消返回 null */
+  pickExeFile(): Promise<SwfPickResult | null>
+  /** 打开系统目录选择框（工具箱用），取消返回 null */
+  pickDirectory(title?: string): Promise<string | null>
+  /**
+   * 生成「点我就可以创建快捷方式.bat」并落盘：双击 bat 即在桌面创建
+   * 指向目标 EXE 的快捷方式。目标必须是有效的 Windows EXE。
+   */
+  createShortcutBat(exePath: string, outputDir: string): Promise<ShortcutBatResult>
   listRecentGames(): Promise<GameRecord[]>
   addRecentGame(record: GameRecord): Promise<void>
   /**

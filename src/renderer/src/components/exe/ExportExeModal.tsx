@@ -4,13 +4,13 @@ import { AppstoreOutlined } from '@ant-design/icons'
 import { strings } from '@renderer/locales/zh'
 import { buildSwfFileUrl } from '@shared/protocol'
 import { getApi } from '@renderer/services/ipc.service'
-import { getLoadedSwfSource } from '@renderer/services/game-launcher'
+import { getLoadedSwfSource, loadSwfSourceBytes } from '@renderer/services/game-launcher'
 import { toast } from '@renderer/services/ui-message'
 import { useGameStore } from '@renderer/store/useGameStore'
 import { useAppServices } from '@renderer/services/app-services'
 
 type SwfSource =
-  | { kind: 'current'; bytes: Uint8Array; name: string }
+  | { kind: 'current'; name: string }
   | { kind: 'picked'; bytes: Uint8Array; name: string }
   | null
 
@@ -59,7 +59,7 @@ export default function ExportExeModal({ open, onClose }: { open: boolean; onClo
 
   const activeSource: SwfSource | null =
     useCurrent && currentSource
-      ? { kind: 'current', bytes: currentSource.bytes, name: currentSource.name }
+      ? { kind: 'current', name: currentSource.name }
       : picked
 
   const pickSwfFile = async () => {
@@ -89,8 +89,15 @@ export default function ExportExeModal({ open, onClose }: { open: boolean; onClo
     const safeName = (outputName.trim() || 'flash-game').replace(/\.(exe|zip)$/i, '')
     setBusy(true)
     try {
+      // 当前游戏的字节按需取（拖拽来源在内存，本地路径来源重读磁盘）
+      const bytes =
+        activeSource.kind === 'current' ? (await loadSwfSourceBytes())?.bytes : activeSource.bytes
+      if (!bytes) {
+        message.warning(strings.exe.pickSwfFirst)
+        return
+      }
       const result = await getApi().packSwfExe(
-        activeSource.bytes,
+        bytes,
         `${safeName}.exe`,
         useCustomProjector && projectorBytes ? projectorBytes : undefined
       )
@@ -220,7 +227,7 @@ export default function ExportExeModal({ open, onClose }: { open: boolean; onClo
                 <Button size="small" onClick={() => void pickSwfFile()}>
                   {strings.exe.chooseSwf}
                 </Button>
-                {picked && (
+                {picked?.kind === 'picked' && (
                   <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                     {picked.name} · {formatBytes(picked.bytes.length)}
                   </Typography.Text>

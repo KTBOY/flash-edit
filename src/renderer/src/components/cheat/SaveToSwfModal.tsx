@@ -3,7 +3,7 @@ import { App as AntdApp, Button, Checkbox, InputNumber, Modal, Space, Table, Tag
 import type { SwfPatchSpec, SwfPatchReportItem } from '@shared/types'
 import { strings } from '@renderer/locales/zh'
 import { getApi } from '@renderer/services/ipc.service'
-import { getLoadedSwfSource } from '@renderer/services/game-launcher'
+import { getLoadedSwfSource, loadSwfSourceBytes } from '@renderer/services/game-launcher'
 import { useCheatStore } from '@renderer/store/useCheatStore'
 import { useGameStore } from '@renderer/store/useGameStore'
 
@@ -84,9 +84,10 @@ export default function SaveToSwfModal({ open, onClose }: { open: boolean; onClo
   }
 
   const analyze = async () => {
-    const sourceBytes = getLoadedSwfSource()
     const specs = buildSpecs()
-    if (!sourceBytes || !specs) return
+    if (!specs) return
+    const sourceBytes = await loadSwfSourceBytes()
+    if (!sourceBytes) return
     setBusy(true)
     try {
       const report = await getApi().analyzeSwfPatch(sourceBytes.bytes, specs)
@@ -101,9 +102,10 @@ export default function SaveToSwfModal({ open, onClose }: { open: boolean; onClo
   }
 
   const saveAs = async () => {
-    const sourceBytes = getLoadedSwfSource()
     const specs = buildSpecs()
-    if (!sourceBytes || !specs) return
+    if (!specs) return
+    const sourceBytes = await loadSwfSourceBytes()
+    if (!sourceBytes) return
     setBusy(true)
     try {
       const defaultName = (game?.name ?? 'game').replace(/\.swf$/i, '') + '_modified.swf'

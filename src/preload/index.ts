@@ -18,6 +18,10 @@ import { IPC, IPC_BRIDGE_KEY, type IpcApi } from '@shared/ipc'
 const api: IpcApi = {
   getAppInfo: () => ipcRenderer.invoke(IPC.APP_INFO),
   pickSwfFile: () => ipcRenderer.invoke(IPC.DIALOG_PICK_SWF),
+  pickExeFile: () => ipcRenderer.invoke(IPC.DIALOG_PICK_EXE),
+  pickDirectory: (title?: string) => ipcRenderer.invoke(IPC.DIALOG_PICK_DIR, title),
+  createShortcutBat: (exePath: string, outputDir: string) =>
+    ipcRenderer.invoke(IPC.TOOLBOX_SHORTCUT_BAT, exePath, outputDir),
   listRecentGames: () => ipcRenderer.invoke(IPC.GAMES_LIST),
   addRecentGame: (record: GameRecord) => ipcRenderer.invoke(IPC.GAMES_ADD, record),
   removeGames: (hashes: string[], deleteFiles: boolean) =>
