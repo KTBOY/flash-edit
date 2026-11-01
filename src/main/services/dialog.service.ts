@@ -54,6 +54,20 @@ export async function pickSwfSavePath(
   return result.filePath
 }
 
+/** 弹出资源另存对话框（工具箱 · 网页资源下载），返回目标路径；取消返回 null */
+export async function pickResourceSavePath(
+  parent?: BrowserWindow | null,
+  defaultName = 'resource'
+): Promise<string | null> {
+  const result = await dialog.showSaveDialog(parent ?? (undefined as never), {
+    title: '保存资源',
+    defaultPath: defaultName,
+    filters: [{ name: '所有文件', extensions: ['*'] }]
+  })
+  if (result.canceled || !result.filePath) return null
+  return result.filePath
+}
+
 /** 弹出系统目录选择框，返回选中目录；取消返回 null */
 export async function pickDirectory(
   parent?: BrowserWindow | null,

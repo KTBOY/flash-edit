@@ -245,6 +245,71 @@ export interface ShortcutBatResult {
   mode: ShortcutBatMode
 }
 
+/* ---------- 工具箱：网页资源下载（图片 / 视频） ---------- */
+
+/** 网页资源类型：image 图片 / video 直链视频 / embed 嵌入播放器（无直链）/ file 其他直链文件 */
+export type WebResourceKind = 'image' | 'video' | 'embed' | 'file'
+
+/** 站点解析方式：auto 按域名自动识别 / gameshare 精确解析 / generic 任意网页兜底 */
+export type WebResourceSiteId = 'auto' | 'gameshare' | 'generic'
+
+/** 网页中解析出的单个资源 */
+export interface WebResourceInfo {
+  kind: WebResourceKind
+  /** 资源绝对地址（相对路径已按页面地址补全，仅 http/https） */
+  url: string
+  /** 保存时默认使用的文件名（已清洗 Windows 非法字符） */
+  fileName: string
+  /** 资源字节数；解析阶段未知为 0 */
+  sizeBytes: number
+  /** 预览用封面地址（嵌入视频 / 无海报视频尽力给出） */
+  coverUrl?: string
+}
+
+/** 网页资源解析结果（主进程 → 渲染进程） */
+export interface WebResourceParseResult {
+  /** 实际使用的站点解析器：gameshare / generic */
+  siteId: string
+  /** 页面标题，取不到为空串 */
+  pageTitle: string
+  /** 实际请求的页面地址 */
+  pageUrl: string
+  resources: WebResourceInfo[]
+}
+
+/** 单个网页资源下载参数 */
+export interface WebResourceDownloadInput {
+  url: string
+  /** 资源所属页面地址，作 Referer 过防盗链 */
+  referer?: string
+  /** 另存为对话框的默认文件名 */
+  defaultName: string
+  /** 批量下载的目标目录；缺省时主进程弹另存为对话框 */
+  outputDir?: string
+}
+
+/** 网页资源下载结果（下载结束才 resolve；用户在另存为里取消时返回 null 由调用方约定） */
+export interface WebResourceDownloadResult {
+  downloadId: string
+  /** 实际写入的文件绝对路径 */
+  savePath: string
+  sizeBytes: number
+  /** 用户主动取消为 true */
+  canceled: boolean
+}
+
+/** 网页资源下载进度（主进程 → 渲染进程事件载荷） */
+export interface WebResourceDownloadProgress {
+  downloadId: string
+  url: string
+  receivedBytes: number
+  /** 0 表示总大小未知 */
+  totalBytes: number
+  status: 'downloading' | 'succeeded' | 'failed' | 'canceled'
+  /** status 为 failed 时的人类可读原因 */
+  error?: string
+}
+
 /** 应用信息 */
 export interface AppInfo {
   version: string

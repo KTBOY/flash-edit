@@ -7,6 +7,7 @@ import { isInsideDir } from './infra/paths'
 import { logger } from './infra/logger'
 import { pickSwfFile, pickSwfSavePath, pickDirectory, pickExeFile } from './services/dialog.service'
 import { createShortcutBat } from './services/toolbox/shortcut-tool.service'
+import { WebResourceService } from './services/toolbox/web-resource.service'
 import { analyzeSwfPatch, patchSwf } from './services/swf-patch.service'
 import {
   buildProjectorExe,
@@ -96,6 +97,20 @@ export function registerIpcHandlers(context: MainContext): () => void {
     if (typeof outputDir !== 'string' || !outputDir) throw new Error('未选择 bat 输出目录')
     return createShortcutBat({ exePath, outputDir })
   })
+
+  // 工具箱 · 网页资源下载：解析页面图片/视频 + 单个另存/批量落盘到任意位置
+  const webResource = new WebResourceService((progress) => {
+    win()?.webContents.send(IPC.TOOLBOX_WEB_RESOURCE_PROGRESS, progress)
+  })
+  ipcMain.handle(IPC.TOOLBOX_PARSE_WEB_RESOURCE, (_event, siteId: unknown, url: unknown) =>
+    webResource.parse(typeof siteId === 'string' && siteId ? siteId : 'auto', String(url ?? ''))
+  )
+  ipcMain.handle(IPC.TOOLBOX_DOWNLOAD_WEB_RESOURCE, (_event, input: unknown) =>
+    webResource.start(context.getMainWindow(), input)
+  )
+  ipcMain.handle(IPC.TOOLBOX_WEB_RESOURCE_CANCEL, (_event, downloadId: unknown) =>
+    typeof downloadId === 'string' ? webResource.cancel(downloadId) : false
+  )
 
   // 游戏库列表：按记录里的 path 实时核对磁盘文件，已不存在的标注 missing，
   // 渲染层据此显示"文件丢失"并禁用打开（记录本身保留，删除与否由用户决定）

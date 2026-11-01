@@ -14,7 +14,11 @@ import type {
   SwfPatchSpec,
   SwfPickResult,
   ShortcutBatResult,
-  SwfSaveResult
+  SwfSaveResult,
+  WebResourceDownloadInput,
+  WebResourceDownloadProgress,
+  WebResourceDownloadResult,
+  WebResourceParseResult
 } from './types'
 
 /**
@@ -26,6 +30,10 @@ export const IPC = {
   DIALOG_PICK_EXE: 'dialog:pick-exe',
   DIALOG_PICK_DIR: 'dialog:pick-dir',
   TOOLBOX_SHORTCUT_BAT: 'toolbox:shortcut-bat',
+  TOOLBOX_PARSE_WEB_RESOURCE: 'toolbox:parse-web-resource',
+  TOOLBOX_DOWNLOAD_WEB_RESOURCE: 'toolbox:download-web-resource',
+  TOOLBOX_WEB_RESOURCE_CANCEL: 'toolbox:web-resource-cancel',
+  TOOLBOX_WEB_RESOURCE_PROGRESS: 'toolbox:web-resource-progress',
   GAMES_LIST: 'games:list',
   GAMES_ADD: 'games:add',
   GAMES_DELETE: 'games:delete',
@@ -75,6 +83,22 @@ export interface IpcApi {
    * 指向目标 EXE 的快捷方式。目标必须是有效的 Windows EXE。
    */
   createShortcutBat(exePath: string, outputDir: string): Promise<ShortcutBatResult>
+  /**
+   * 解析网页中的图片 / 视频资源。siteId 见 WebResourceSiteId：
+   * auto 按域名自动选站点解析器（未命中专用站点时回退通用网页解析）。
+   */
+  parseWebResource(siteId: string, url: string): Promise<WebResourceParseResult>
+  /**
+   * 下载单个网页资源。input.outputDir 缺省时先弹另存为对话框（用户取消返回 null），
+   * 传入目录则以清洗后的 defaultName 直接落盘。
+   * resolve 于下载结束：失败抛错，用户取消下载返回 canceled: true。
+   * 进度经 onWebResourceProgress 事件推送（downloadId 以首个进度事件为准）。
+   */
+  downloadWebResource(input: WebResourceDownloadInput): Promise<WebResourceDownloadResult | null>
+  /** 取消进行中的网页资源下载；downloadId 无对应任务返回 false */
+  cancelWebResourceDownload(downloadId: string): Promise<boolean>
+  /** 订阅网页资源下载进度与状态变化，返回取消订阅函数 */
+  onWebResourceProgress(callback: (progress: WebResourceDownloadProgress) => void): () => void
   listRecentGames(): Promise<GameRecord[]>
   addRecentGame(record: GameRecord): Promise<void>
   /**

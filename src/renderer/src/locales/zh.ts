@@ -17,7 +17,8 @@ export const strings = {
     about: 'ABOUT',
     dropToLoad: 'DROP .SWF TO LOAD',
     footer: 'LOCAL SESSION · SINGLE PLAYER ONLY',
-    synced: 'SYNCED'
+    synced: 'SYNCED',
+    webResource: 'WEB RESOURCES'
   },
   app: {
     title: '闪电Flash',
@@ -281,6 +282,33 @@ export const strings = {
     done: 'bat 已生成，双击它即可创建桌面快捷方式（可随文件夹一起分发）',
     doneAbsolute: 'bat 已生成。它记录的是本机绝对路径，仅在本机当前位置有效',
     reveal: '打开所在目录',
-    securityNote: 'bat 内嵌一段 PowerShell 调用系统组件创建快捷方式，个别杀毒软件可能提示，属正常现象。'
+    securityNote: 'bat 内嵌一段 PowerShell 调用系统组件创建快捷方式，个别杀毒软件可能提示，属正常现象。',
+    /* 网页资源下载 */
+    webResourceTitle: '网页资源下载（图片 / 视频）',
+    webResourceHint:
+      '粘贴网页地址，识别页面中的图片与视频资源：图片和直链视频可单个另存到任意位置，或批量下载到选定目录；嵌入播放器类视频（如腾讯视频）提供封面与「在浏览器打开」。',
+    webResourceSiteAuto: '自动识别',
+    webResourceSiteGameshare: 'GameShare',
+    webResourceSiteGeneric: '通用网页',
+    webResourceUrlPlaceholder: 'https://www.gameshare.cc/posts/…',
+    webResourceParse: '解析资源',
+    webResourceParseEmpty: '页面中未发现可识别的图片或视频资源',
+    webResourcePageTitle: '页面',
+    webResourceCount: '共识别出',
+    webResourceUnit: '个资源',
+    webResourceBatch: '全部下载',
+    webResourcePickBatchDir: '选择批量下载保存目录',
+    webResourceBatchDone: '批量下载完成',
+    webResourceDownload: '下载',
+    webResourceOpen: '在浏览器打开',
+    webResourceReveal: '在文件夹中显示',
+    webResourceCancel: '取消',
+    webResourceCanceled: '已取消下载',
+    webResourceSaved: '资源已保存',
+    webResourceTagImage: '图片',
+    webResourceTagVideo: '视频',
+    webResourceTagEmbed: '嵌入',
+    webResourceTagFile: '文件',
+    webResourceSizeUnknown: '大小未知'
   }
 } as const

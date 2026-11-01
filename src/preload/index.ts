@@ -7,7 +7,11 @@ import type {
   GameRecord,
   SwfPatchReportItem,
   SwfPatchSpec,
-  SwfSaveResult
+  SwfSaveResult,
+  WebResourceDownloadInput,
+  WebResourceDownloadProgress,
+  WebResourceDownloadResult,
+  WebResourceParseResult
 } from '@shared/types'
 import { IPC, IPC_BRIDGE_KEY, type IpcApi } from '@shared/ipc'
 
@@ -22,6 +26,20 @@ const api: IpcApi = {
   pickDirectory: (title?: string) => ipcRenderer.invoke(IPC.DIALOG_PICK_DIR, title),
   createShortcutBat: (exePath: string, outputDir: string) =>
     ipcRenderer.invoke(IPC.TOOLBOX_SHORTCUT_BAT, exePath, outputDir),
+  parseWebResource: (siteId: string, url: string): Promise<WebResourceParseResult> =>
+    ipcRenderer.invoke(IPC.TOOLBOX_PARSE_WEB_RESOURCE, siteId, url),
+  downloadWebResource: (input: WebResourceDownloadInput): Promise<WebResourceDownloadResult | null> =>
+    ipcRenderer.invoke(IPC.TOOLBOX_DOWNLOAD_WEB_RESOURCE, input),
+  cancelWebResourceDownload: (downloadId: string) =>
+    ipcRenderer.invoke(IPC.TOOLBOX_WEB_RESOURCE_CANCEL, downloadId),
+  onWebResourceProgress: (callback: (progress: WebResourceDownloadProgress) => void) => {
+    const listener = (_event: IpcRendererEvent, progress: WebResourceDownloadProgress) =>
+      callback(progress)
+    ipcRenderer.on(IPC.TOOLBOX_WEB_RESOURCE_PROGRESS, listener)
+    return () => {
+      ipcRenderer.removeListener(IPC.TOOLBOX_WEB_RESOURCE_PROGRESS, listener)
+    }
+  },
   listRecentGames: () => ipcRenderer.invoke(IPC.GAMES_LIST),
   addRecentGame: (record: GameRecord) => ipcRenderer.invoke(IPC.GAMES_ADD, record),
   removeGames: (hashes: string[], deleteFiles: boolean) =>
