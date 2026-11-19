@@ -13,6 +13,7 @@ import type {
   SwfPatchReportItem,
   SwfPatchSpec,
   SwfPickResult,
+  SfxInstallBatResult,
   ShortcutBatResult,
   SwfSaveResult,
   WebResourceDownloadInput,
@@ -30,6 +31,7 @@ export const IPC = {
   DIALOG_PICK_EXE: 'dialog:pick-exe',
   DIALOG_PICK_DIR: 'dialog:pick-dir',
   TOOLBOX_SHORTCUT_BAT: 'toolbox:shortcut-bat',
+  TOOLBOX_SFX_INSTALL_BAT: 'toolbox:sfx-install-bat',
   TOOLBOX_PARSE_WEB_RESOURCE: 'toolbox:parse-web-resource',
   TOOLBOX_DOWNLOAD_WEB_RESOURCE: 'toolbox:download-web-resource',
   TOOLBOX_WEB_RESOURCE_CANCEL: 'toolbox:web-resource-cancel',
@@ -83,6 +85,13 @@ export interface IpcApi {
    * 指向目标 EXE 的快捷方式。目标必须是有效的 Windows EXE。
    */
   createShortcutBat(exePath: string, outputDir: string): Promise<ShortcutBatResult>
+  /**
+   * 生成「一键解压安装.bat」：双击后把 WinRAR 自解压包（SFX）静默解压到
+   * SFX 同目录同名文件夹（sfxPath 去扩展名），弹窗询问是否创建桌面快捷方式、
+   * 是否立刻打开游戏。launcherPath 必须位于该解压目标内（从解压产物里选），
+   * 服务端据此计算相对路径。sfxPath 必须是 WinRAR 自解压包。
+   */
+  createSfxInstallBat(sfxPath: string, launcherPath: string, outputDir: string): Promise<SfxInstallBatResult>
   /**
    * 解析网页中的图片 / 视频资源。siteId 见 WebResourceSiteId：
    * auto 按域名自动选站点解析器（未命中专用站点时回退通用网页解析）。

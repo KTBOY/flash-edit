@@ -5,10 +5,11 @@ import { strings } from '@renderer/locales/zh'
 import { getApi } from '@renderer/services/ipc.service'
 import { toast } from '@renderer/services/ui-message'
 import WebResourceToolCard from './WebResourceToolCard'
+import SfxInstallToolCard from './SfxInstallToolCard'
 
 /**
- * 工具箱面板：轻量小工具的入口，当前有「网页资源下载」与「创建快捷方式（生成 bat）」。
- * 面板按工具卡片纵向排列，后续工具往这里加卡片即可。
+ * 工具箱面板：轻量小工具的入口，当前有「一键解压安装」「网页资源下载」
+ * 与「创建快捷方式（生成 bat）」。面板按工具卡片纵向排列，后续工具往这里加卡片即可。
  */
 
 /** 与主进程 SHORTCUT_BAT_NAME 一致，仅用于界面预览生成位置 */
@@ -156,6 +157,7 @@ function ShortcutToolCard() {
 export default function ToolboxPanel() {
   return (
     <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 12, padding: 8 }}>
+      <SfxInstallToolCard />
       <WebResourceToolCard />
       <ShortcutToolCard />
     </div>

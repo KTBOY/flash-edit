@@ -245,6 +245,18 @@ export interface ShortcutBatResult {
   mode: ShortcutBatMode
 }
 
+/** 工具箱：一键解压安装 bat 的生成结果 */
+export interface SfxInstallBatResult {
+  /** 生成的 bat 绝对路径（一键解压安装.bat） */
+  batPath: string
+  /** 解压目标目录（SFX 同目录同名文件夹），bat 运行时把游戏解压到这里 */
+  targetDir: string
+  /** 启动器在解压目标内的相对路径，快捷方式与打开游戏都指向它 */
+  launcherRelPath: string
+  /** bat 与 SFX 同目录 → portable（整包可移动分发）；否则 absolute（仅本机当前位置有效） */
+  mode: ShortcutBatMode
+}
+
 /* ---------- 工具箱：网页资源下载（图片 / 视频） ---------- */
 
 /** 网页资源类型：image 图片 / video 直链视频 / embed 嵌入播放器（无直链）/ file 其他直链文件 */

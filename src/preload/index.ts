@@ -26,6 +26,8 @@ const api: IpcApi = {
   pickDirectory: (title?: string) => ipcRenderer.invoke(IPC.DIALOG_PICK_DIR, title),
   createShortcutBat: (exePath: string, outputDir: string) =>
     ipcRenderer.invoke(IPC.TOOLBOX_SHORTCUT_BAT, exePath, outputDir),
+  createSfxInstallBat: (sfxPath: string, launcherPath: string, outputDir: string) =>
+    ipcRenderer.invoke(IPC.TOOLBOX_SFX_INSTALL_BAT, sfxPath, launcherPath, outputDir),
   parseWebResource: (siteId: string, url: string): Promise<WebResourceParseResult> =>
     ipcRenderer.invoke(IPC.TOOLBOX_PARSE_WEB_RESOURCE, siteId, url),
   downloadWebResource: (input: WebResourceDownloadInput): Promise<WebResourceDownloadResult | null> =>

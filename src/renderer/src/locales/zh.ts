@@ -309,6 +309,25 @@ export const strings = {
     webResourceTagVideo: '视频',
     webResourceTagEmbed: '嵌入',
     webResourceTagFile: '文件',
-    webResourceSizeUnknown: '大小未知'
+    webResourceSizeUnknown: '大小未知',
+    /* 一键解压安装 */
+    sfxTitle: '一键解压安装（生成 bat）',
+    sfxHint:
+      '把 WinRAR 自解压游戏包变成「双击即玩」：选择游戏包 EXE 与解压产物里的启动器 EXE，生成「一键解压安装.bat」。双击该 bat 后自动解压到游戏包同目录的同名文件夹，再依次询问是否创建桌面快捷方式、是否立刻打开游戏。bat 与游戏包放同一目录时记录相对位置，整个文件夹移动或分发后依然有效。',
+    sfxPickSfx: '选择游戏包 EXE（自解压包）',
+    sfxPickLauncher: '选择启动游戏的 EXE',
+    sfxLauncherHint: '请到解压后的同名文件夹里选（如 Dragon Cht\\Dragon.exe）',
+    sfxPickDir: '选择 bat 输出目录',
+    sfxPickDirTitle: '选择 bat 生成位置',
+    sfxConfirmTitle: '生成一键解压安装 bat',
+    sfxConfirmSfx: '游戏包（自解压 EXE）',
+    sfxConfirmLauncher: '启动游戏 EXE',
+    sfxConfirmTarget: '解压目标',
+    sfxConfirmBat: '生成位置',
+    sfxConfirmNote:
+      '同名 bat 会被覆盖；快捷方式名称取启动器 EXE 文件名，图标用启动器自带图标。游戏包必须是 WinRAR 自解压包，其它格式会生成失败。',
+    sfxGenerate: '生成 bat',
+    sfxDone: 'bat 已生成：把它和游戏包放在一起发出去，双击即可一键解压安装',
+    sfxDoneAbsolute: 'bat 已生成。它记录的是本机绝对路径，仅在本机当前位置有效'
   }
 } as const

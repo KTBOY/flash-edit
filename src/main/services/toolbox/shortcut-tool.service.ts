@@ -26,7 +26,7 @@ export interface ShortcutBatOptions {
 }
 
 /** UTF-16LE → base64，与 PowerShell 的 [Text.Encoding]::Unicode 对应 */
-function utf16leBase64(text: string): string {
+export function utf16leBase64(text: string): string {
   return Buffer.from(text, 'utf16le').toString('base64')
 }
 

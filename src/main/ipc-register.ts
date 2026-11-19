@@ -7,6 +7,7 @@ import { isInsideDir } from './infra/paths'
 import { logger } from './infra/logger'
 import { pickSwfFile, pickSwfSavePath, pickDirectory, pickExeFile } from './services/dialog.service'
 import { createShortcutBat } from './services/toolbox/shortcut-tool.service'
+import { createSfxInstallBat } from './services/toolbox/sfx-install-tool.service'
 import { WebResourceService } from './services/toolbox/web-resource.service'
 import { analyzeSwfPatch, patchSwf } from './services/swf-patch.service'
 import {
@@ -97,6 +98,17 @@ export function registerIpcHandlers(context: MainContext): () => void {
     if (typeof outputDir !== 'string' || !outputDir) throw new Error('未选择 bat 输出目录')
     return createShortcutBat({ exePath, outputDir })
   })
+
+  // 工具箱 · 一键解压安装：WinRAR 自解压游戏包 → 解压目标内选启动器 → 生成安装 bat
+  ipcMain.handle(
+    IPC.TOOLBOX_SFX_INSTALL_BAT,
+    (_event, sfxPath: unknown, launcherPath: unknown, outputDir: unknown) => {
+      if (typeof sfxPath !== 'string' || !sfxPath) throw new Error('未选择要解压的游戏包 EXE')
+      if (typeof launcherPath !== 'string' || !launcherPath) throw new Error('未选择启动游戏的 EXE')
+      if (typeof outputDir !== 'string' || !outputDir) throw new Error('未选择 bat 输出目录')
+      return createSfxInstallBat({ sfxPath, launcherPath, outputDir })
+    }
+  )
 
   // 工具箱 · 网页资源下载：解析页面图片/视频 + 单个另存/批量落盘到任意位置
   const webResource = new WebResourceService((progress) => {
